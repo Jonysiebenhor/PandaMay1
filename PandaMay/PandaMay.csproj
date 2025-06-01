@@ -80,6 +80,7 @@
     <Content Include="Empleados\EmpacarPedidos.aspx" />
     <Content Include="Empleados\IngresoPedidos.aspx" />
     <Content Include="Empleados\MenuEmpl.aspx" />
+    <Content Include="Empleados\PruebaGit.aspx" />
     <Content Include="Empleados\Ventas.aspx" />
     <Content Include="Imagenes\facebook.png" />
     <Content Include="Imagenes\instagram.png" />
@@ -134,6 +135,13 @@
     </Compile>
     <Compile Include="Empleados\MenuEmpl.aspx.designer.cs">
       <DependentUpon>MenuEmpl.aspx</DependentUpon>
+    </Compile>
+    <Compile Include="Empleados\PruebaGit.aspx.cs">
+      <DependentUpon>PruebaGit.aspx</DependentUpon>
+      <SubType>ASPXCodeBehind</SubType>
+    </Compile>
+    <Compile Include="Empleados\PruebaGit.aspx.designer.cs">
+      <DependentUpon>PruebaGit.aspx</DependentUpon>
     </Compile>
     <Compile Include="Empleados\Ventas.aspx.cs">
       <DependentUpon>Ventas.aspx</DependentUpon>
