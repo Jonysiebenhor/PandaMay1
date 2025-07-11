@@ -3,6 +3,7 @@
 using System;
 using System.Data;
 using System.Data.SqlClient;
+using System.Net.Sockets;
 using System.Security.Policy;
 using System.Web.UI.WebControls;
 //using System.Windows.Controls.Primitives;
@@ -14,7 +15,10 @@ namespace PandaMay
     public class Conectar
     {
         SqlConnection conexion = new SqlConnection();
-        String conexionString = "Data Source=DESKTOP-KNTJ3BG\\SQLEXPRESS;DATABASE=PandaMay;Integrated security=true";
+        //conexion para la pc de JONY//String conexionString = "Data Source=DESKTOP-KNTJ3BG\\SQLEXPRESS;DATABASE=PandaMay;Integrated security=true";
+
+        //conexion para el servidor
+        String conexionString = "workstation id = PandaMay.mssql.somee.com; packet size = 4096; user id = Jonysiebenhor_SQLLogin_1; pwd=9btgzhlyqy;data source = PandaMay.mssql.somee.com; persist security info=False;initial catalog = PandaMay; TrustServerCertificate=True";
 
 
         public void conectar()
