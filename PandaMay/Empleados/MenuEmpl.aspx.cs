@@ -51,6 +51,8 @@ namespace PandaMay.Empleados
                                     Button3.Visible = true;
                                     Button4.Visible = true;
                                     Button5.Visible = true;
+                                    Button6.Visible = true;
+                                    Button7.Visible = true;
                                 }
                                 else if (var is "Ventas")
                                 {
@@ -99,6 +101,14 @@ namespace PandaMay.Empleados
         protected void Button5_Click(object sender, EventArgs e)
         {
 
+        }
+        protected void Button6_Click(object sender, EventArgs e)
+        {
+
+        }
+        protected void Button7_Click(object sender, EventArgs e)
+        {
+            Response.Redirect("/productos/productos.aspx");
         }
     }
 }
