@@ -26,7 +26,11 @@ namespace PandaMay.Empleados
                 }
                 conectado.conectar();
                 String usuario = Session["usuario"].ToString();
-                string connect = "Data Source=DESKTOP-KNTJ3BG\\SQLEXPRESS;DATABASE=PandaMay;Integrated security=true";
+                //conexion para la pc de JONY//String connect = "Data Source=DESKTOP-KNTJ3BG\\SQLEXPRESS;DATABASE=PandaMay;Integrated security=true";
+
+                //conexion para el servidor
+                String connect = "workstation id = PandaMay.mssql.somee.com; packet size = 4096; user id = Jonysiebenhor_SQLLogin_1; pwd=9btgzhlyqy;data source = PandaMay.mssql.somee.com; persist security info=False;initial catalog = PandaMay; TrustServerCertificate=True";
+
                 using (SqlConnection conn = new SqlConnection(connect))
                 {
                     String query = "Select z.nombre from puestos z left join  empleadospuestos a on z.idpuesto=a.idpuesto left join empleados b on a.idempleado=b.idempleado left join usuarios c on b.idusuario=c.idusuario where c.usuario ='" + usuario + "'";
