@@ -1,18 +1,6 @@
 ﻿using System;
 using System.Data;
-using System.Data.Odbc;
-using System.Collections.Generic;
-using System.Linq;
-using System.Web;
-using System.Web.Services.Description;
-using System.Web.UI;
 using System.Web.UI.WebControls;
-using System.Windows.Forms;
-using System.Security.Cryptography.X509Certificates;
-using static System.Windows.Forms.VisualStyles.VisualStyleElement.TaskbarClock;
-using static System.Windows.Forms.VisualStyles.VisualStyleElement;
-using DryIoc;
-using System.Reflection.Emit;
 
 namespace PandaMay.Empleados
 {
