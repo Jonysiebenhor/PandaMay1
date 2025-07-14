@@ -108,7 +108,14 @@ namespace PandaMay.Empleados
         }
         protected void Button7_Click(object sender, EventArgs e)
         {
-            Response.Redirect("/productos/productos.aspx");
+            if (Session["usuario"] is null)
+            {
+                Response.Redirect("/Login.aspx");
+            }
+            else
+            {
+                Response.Redirect("/productos/productos.aspx");
+            }
         }
     }
 }
