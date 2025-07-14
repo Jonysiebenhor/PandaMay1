@@ -90,6 +90,7 @@
     <Content Include="Imagenes\whatsapp.png" />
     <Content Include="Login.aspx" />
     <Content Include="Empleados\SeguimientoPedidos.aspx" />
+    <Content Include="Productos\CrearProducto.aspx" />
     <Content Include="Productos\Productos.aspx" />
     <Content Include="Web.config" />
   </ItemGroup>
@@ -171,6 +172,13 @@
     </Compile>
     <Compile Include="MasterPage2.Master.designer.cs">
       <DependentUpon>MasterPage2.Master</DependentUpon>
+    </Compile>
+    <Compile Include="Productos\CrearProducto.aspx.cs">
+      <DependentUpon>CrearProducto.aspx</DependentUpon>
+      <SubType>ASPXCodeBehind</SubType>
+    </Compile>
+    <Compile Include="Productos\CrearProducto.aspx.designer.cs">
+      <DependentUpon>CrearProducto.aspx</DependentUpon>
     </Compile>
     <Compile Include="Productos\Productos.aspx.cs">
       <DependentUpon>Productos.aspx</DependentUpon>

@@ -112,12 +112,50 @@ namespace PandaMay
         }
         public DataTable productos()
         {
-            String query = "select a.codigodebarras, a.referencia, a.nombre,(select b.precio from precios b left join productos c on b.idproducto=c.idproducto where b.nombre='unidad' and a.idproducto=c.idproducto) as unidad,(select b.precio from precios b left join productos c on b.idproducto=c.idproducto where b.nombre='3 o más' and a.idproducto=c.idproducto) as tresomas,(select b.precio from precios b left join productos c on b.idproducto=c.idproducto where b.nombre='docena' and a.idproducto=c.idproducto) as docena, (select b.precio from precios b left join productos c on b.idproducto=c.idproducto where b.nombre='fardo' and a.idproducto=c.idproducto) as fardo, c.foto from productos a  left join existencias j on a.idproducto = j.idproducto left join colores k on j.idcolor=k.idcolor left join imagenes c on k.idcolor = c.idcolor;";
-            SqlCommand cmd = new SqlCommand(query, conexion);
-            SqlDataAdapter returnVal = new SqlDataAdapter(query, conexion);
-            DataTable dt = new DataTable();
-            returnVal.Fill(dt);
-            return dt;
+            const string query = @"
+      SELECT 
+        a.idproducto,
+        a.codigodebarras,
+        a.referencia,
+        a.nombre,
+        (
+          SELECT b.precio 
+          FROM precios b 
+          WHERE b.nombre = 'unidad' 
+            AND b.idproducto = a.idproducto
+        ) AS unidad,
+        (
+          SELECT b.precio 
+          FROM precios b 
+          WHERE b.nombre = '3 o más' 
+            AND b.idproducto = a.idproducto
+        ) AS tresomas,
+        (
+          SELECT b.precio 
+          FROM precios b 
+          WHERE b.nombre = 'docena' 
+            AND b.idproducto = a.idproducto
+        ) AS docena,
+        (
+          SELECT b.precio 
+          FROM precios b 
+          WHERE b.nombre = 'fardo' 
+            AND b.idproducto = a.idproducto
+        ) AS fardo,
+        c.foto
+      FROM productos a
+      LEFT JOIN existencias j ON a.idproducto = j.idproducto
+      LEFT JOIN colores    k ON j.idcolor    = k.idcolor
+      LEFT JOIN imagenes   c ON k.idcolor    = c.idcolor;
+    ";
+
+            using (var cmd = new SqlCommand(query, conexion))
+            using (var da = new SqlDataAdapter(cmd))
+            {
+                var dt = new DataTable();
+                da.Fill(dt);
+                return dt;
+            }
         }
         public DataTable tiendasempleados(String usuario)
         {
@@ -384,5 +422,17 @@ namespace PandaMay
             DataTable dt = new DataTable();
             returnVal.Fill(dt);
             return dt;
+        }
+        public DataTable GetByProducto(string tableName, int idproducto)
+        {
+            string sql = $"SELECT * FROM {tableName} WHERE idproducto = @id";
+            using (var cmd = new SqlCommand(sql, conexion))
+            {
+                cmd.Parameters.AddWithValue("@id", idproducto);
+                var da = new SqlDataAdapter(cmd);
+                var dt = new DataTable();
+                da.Fill(dt);
+                return dt;
+            }
         }
     } }
