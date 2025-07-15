@@ -15,15 +15,6 @@ namespace PandaMay.Productos
     {
 
         /// <summary>
-        /// Control btnCrearProducto.
-        /// </summary>
-        /// <remarks>
-        /// Campo generado automáticamente.
-        /// Para modificarlo, mueva la declaración del campo del archivo del diseñador al archivo de código subyacente.
-        /// </remarks>
-        protected global::System.Web.UI.WebControls.Button btnCrearProducto;
-
-        /// <summary>
         /// Control pnlTabla.
         /// </summary>
         /// <remarks>
@@ -42,13 +33,13 @@ namespace PandaMay.Productos
         protected global::System.Web.UI.WebControls.Button btnRegresar;
 
         /// <summary>
-        /// Control btnAbrirCrearProducto.
+        /// Control btnCrearProducto.
         /// </summary>
         /// <remarks>
         /// Campo generado automáticamente.
         /// Para modificarlo, mueva la declaración del campo del archivo del diseñador al archivo de código subyacente.
         /// </remarks>
-        protected global::System.Web.UI.WebControls.Button btnAbrirCrearProducto;
+        protected global::System.Web.UI.WebControls.Button btnCrearProducto;
 
         /// <summary>
         /// Control txtBuscar.

@@ -1,32 +1,26 @@
-﻿<%@ Page Title="Productos" Language="C#" MasterPageFile="~/MasterPage.Master"
-    AutoEventWireup="true" CodeBehind="Productos.aspx.cs"
+﻿<%@ Page 
+    Title="Productos" 
+    Language="C#" 
+    MasterPageFile="~/MasterPage.Master"
+    AutoEventWireup="true" 
+    CodeBehind="Productos.aspx.cs"
     Inherits="PandaMay.Productos.Productos" %>
 
 <asp:Content ID="Content1" ContentPlaceHolderID="title" runat="server">
-  <title>Productos</title>
+  Productos
 </asp:Content>
 
 <asp:Content ID="Content2" ContentPlaceHolderID="head" runat="server">
-  <!-- Aquí puedes añadir CSS adicional si lo deseas -->
+  <!-- CSS adicional si lo necesitas -->
 </asp:Content>
 
 <asp:Content ID="Content3" ContentPlaceHolderID="body" runat="server">
 
-  <!-- 1) Solo botón “Crear Producto” al entrar -->
-  <div style="text-align:center; margin:30px 0;">
-    <asp:Button
-      ID="btnCrearProducto"
-      runat="server"
-      CssClass="greenbutton"
-      Text="Crear Producto"
-      OnClick="btnCrearProducto_Click" />
-  </div>
+  <!-- Panel principal: siempre visible al entrar -->
+  <asp:Panel ID="pnlTabla" runat="server" Visible="true">
 
-  <!-- 2) Panel con buscador y disposiciones 35%/65% -->
-  <asp:Panel ID="pnlTabla" runat="server" Visible="false">
-
-    <!-- Encabezado: botón Regresar + buscador -->
-     <div style="display:flex; justify-content:center; align-items:center; gap:10px; margin-bottom:20px;">
+    <!-- Cabecera: Regresar, Crear (nueva pestaña) y Buscador -->
+    <div style="display:flex; justify-content:center; align-items:center; gap:10px; margin:30px 0;">
       <asp:Button
         ID="btnRegresar"
         runat="server"
@@ -34,14 +28,15 @@
         Text="Regresar"
         OnClick="btnRegresar_Click" />
 
-        <!-- Nuevo botón Crear Producto (abre en pestaña nueva) -->
+
      <asp:Button
-  ID="btnAbrirCrearProducto"
+  ID="btnCrearProducto"
   runat="server"
-  UseSubmitBehavior="false"
+
   CssClass="greenbutton"
   Text="Crear Producto"
-  OnClientClick="window.open('CrearProducto.aspx', '_blank'); return false;" />
+  OnClick="btnCrearProducto_Click" />
+
 
 
       <asp:TextBox
@@ -49,20 +44,20 @@
         runat="server"
         CssClass="buscador"
         placeholder="Buscar Productos..."
-        AutoPostBack="True"
+        AutoPostBack="true"
         OnTextChanged="txtBuscar_TextChanged" />
     </div>
 
-    <!-- Contenedor flex para detalle (35%) y lista (65%) -->
+    <!-- Contenedor flex: izquierda=detalles (35%) / derecha=lista (65%) -->
     <div style="display:flex; width:100%;">
 
-      <!-- IZQUIERDA: Detalles (35%) -->
+      <!-- IZQUIERDA: Panel de detalles -->
       <div style="width:35%; padding-right:20px;">
 
         <asp:Panel ID="pnlDetalles" runat="server" Visible="false">
           <h4>Detalles completos</h4>
 
-          <!-- Cada tabla de detalle dentro de un div scrollable -->
+
           <div style="overflow-x:auto; margin-bottom:20px;">
             <asp:GridView
               ID="gvCombosProductos"
@@ -184,75 +179,90 @@
           </div>
 
         </asp:Panel>
+     
+          </div>
 
-      </div>
-
-      <!-- DERECHA: Lista de productos (65%) -->
-      <div style="width:65%; margin-left:auto; overflow-x:auto;">
+      <!-- DERECHA: Lista de productos -->
+      
+        <div style="width:65%; margin-left:auto; overflow-x:auto;">
 
         <asp:GridView
           ID="GridView1"
           runat="server"
           DataKeyNames="idproducto"
-          ForeColor="Black"
-          Width="100%"
-          CellSpacing="5"
-          HorizontalAlign="Center"
+
           AutoGenerateColumns="false"
           AutoGenerateSelectButton="True"
           OnSelectedIndexChanging="Select1"
           GridLines="Both"
           BorderColor="#ccc"
-          BorderWidth="1px">
+          BorderWidth="1px"
+          CellSpacing="5"
+          HorizontalAlign="Center"
+          Width="100%">
 
-          <SelectedRowStyle BackColor="#80cdbb" Font-Bold="true" />
-          <HeaderStyle BackColor="Black" Font-Bold="True" Font-Italic="False" ForeColor="White" />
-          <SelectedRowStyle BorderStyle="Solid" />
+          <HeaderStyle BackColor="Black" ForeColor="White" Font-Bold="True" />
+          <SelectedRowStyle BackColor="#80cdbb" Font-Bold="True" />
 
           <Columns>
             <asp:TemplateField HeaderText="Producto">
               <ItemTemplate>
-                <asp:Label ID="Label9" runat="server" Text='<%# Bind("nombre") %>' />
+                <asp:Label ID="lblNombre" runat="server"
+                  Text='<%# Eval("nombre") %>' />
               </ItemTemplate>
             </asp:TemplateField>
+
             <asp:TemplateField HeaderText="Precio(U)">
               <ItemTemplate>
-                <asp:Label ID="Label10" runat="server" Text='<%# Bind("unidad") %>' />
+                <asp:Label ID="lblPrecioU" runat="server"
+                  Text='<%# Eval("unidad") %>' />
               </ItemTemplate>
             </asp:TemplateField>
+
             <asp:TemplateField HeaderText="Precio(3)">
               <ItemTemplate>
-                <asp:Label ID="Label11" runat="server" Text='<%# Bind("tresomas") %>' />
+                <asp:Label ID="lblPrecio3" runat="server"
+                  Text='<%# Eval("tresomas") %>' />
               </ItemTemplate>
             </asp:TemplateField>
+
             <asp:TemplateField HeaderText="Precio(Doc)">
               <ItemTemplate>
-                <asp:Label ID="Label12" runat="server" Text='<%# Bind("docena") %>' />
+                <asp:Label ID="lblDocena" runat="server"
+                  Text='<%# Eval("docena") %>' />
               </ItemTemplate>
             </asp:TemplateField>
+
             <asp:TemplateField HeaderText="Precio(F)">
               <ItemTemplate>
-                <asp:Label ID="Label13" runat="server" Text='<%# Bind("fardo") %>' />
+                <asp:Label ID="lblFardo" runat="server"
+                  Text='<%# Eval("fardo") %>' />
               </ItemTemplate>
             </asp:TemplateField>
+
             <asp:TemplateField HeaderText="Código de barras">
               <ItemTemplate>
-                <asp:Label ID="Label14" runat="server" Text='<%# Bind("codigodebarras") %>' />
+                <asp:Label ID="lblCodigoBarras" runat="server"
+                  Text='<%# Eval("codigodebarras") %>' />
               </ItemTemplate>
             </asp:TemplateField>
+
             <asp:TemplateField HeaderText="Referencia">
               <ItemTemplate>
-                <asp:Label ID="Label15" runat="server" Text='<%# Bind("referencia") %>' />
+                <asp:Label ID="lblReferencia" runat="server"
+                  Text='<%# Eval("referencia") %>' />
               </ItemTemplate>
             </asp:TemplateField>
+
             <asp:TemplateField HeaderText="Imagen">
               <ItemTemplate>
-                <asp:Label ID="Label16" runat="server" Text='<%# Bind("foto") %>' />
+                <asp:Label ID="lblImagen" runat="server"
+                  Text='<%# Eval("foto") %>' />
               </ItemTemplate>
             </asp:TemplateField>
           </Columns>
         </asp:GridView>
-
+      
       </div>
 
     </div>

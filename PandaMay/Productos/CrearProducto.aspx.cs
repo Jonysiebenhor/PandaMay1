@@ -20,28 +20,13 @@ namespace PandaMay.Productos
 
         private void CargarListas()
         {
-            // 1) Limpio y coloco el "-- Seleccione --" en cada DropDown
-            ddlSubcategoria.Items.Clear();
-            ddlSubcategoria.Items.Add(new ListItem("-- Subcategoría --", ""));
-            ddlUnidad.Items.Clear();
-            ddlUnidad.Items.Add(new ListItem("-- Unidad --", ""));
-            ddlMarca.Items.Clear();
-            ddlMarca.Items.Add(new ListItem("-- Marca --", ""));
-            ddlTienda.Items.Clear();
-            ddlTienda.Items.Add(new ListItem("-- Tienda --", ""));
-            ddlColor.Items.Clear();
-            ddlColor.Items.Add(new ListItem("-- Color --", ""));
-            ddlColor.Items.Add(new ListItem("Otro...", "0"));  // opción para Color personalizado
-            ddlMedida.Items.Clear();
-            ddlMedida.Items.Add(new ListItem("-- Medida --", ""));
-            ddlImgColor.Items.Clear();
-            ddlImgColor.Items.Add(new ListItem("-- Color --", ""));
-
             using (var cn = new SqlConnection(_connString))
             {
                 cn.Open();
 
                 // Subcategorías
+                ddlSubcategoria.Items.Clear();
+                ddlSubcategoria.Items.Add(new ListItem("-- Subcategoría --", ""));
                 using (var cmd = new SqlCommand(
                     "SELECT idsubcategoria, nombre FROM dbo.SUBCATEGORIAS WHERE activo=1", cn))
                 using (var dr = cmd.ExecuteReader())
@@ -50,130 +35,120 @@ namespace PandaMay.Productos
                             dr["nombre"].ToString(),
                             dr["idsubcategoria"].ToString()));
 
-                // Unidades de medida
-                using (var cmd = new SqlCommand(
+                // Tiendas
+                ddlTienda.Items.Clear();
+                ddlTienda.Items.Add(new ListItem("-- Tienda --", ""));
+                using (var cmd2 = new SqlCommand(
+                    "SELECT idtienda, nombre FROM dbo.TIENDAS WHERE activo=1", cn))
+                using (var dr2 = cmd2.ExecuteReader())
+                    while (dr2.Read())
+                        ddlTienda.Items.Add(new ListItem(
+                            dr2["nombre"].ToString(),
+                            dr2["idtienda"].ToString()));
+
+                // Unidades
+                ddlUnidad.Items.Clear();
+                ddlUnidad.Items.Add(new ListItem("-- Unidad --", ""));
+                using (var cmd3 = new SqlCommand(
                     "SELECT idunidaddemedida, nombre FROM dbo.UNIDADDEMEDIDAS WHERE activo=1", cn))
-                using (var dr = cmd.ExecuteReader())
-                    while (dr.Read())
+                using (var dr3 = cmd3.ExecuteReader())
+                    while (dr3.Read())
                         ddlUnidad.Items.Add(new ListItem(
-                            dr["nombre"].ToString(),
-                            dr["idunidaddemedida"].ToString()));
+                            dr3["nombre"].ToString(),
+                            dr3["idunidaddemedida"].ToString()));
+                ddlUnidad.Items.Add(new ListItem("-- Agregar nueva unidad --", "0"));
 
                 // Marcas
-                using (var cmd = new SqlCommand(
+                ddlMarca.Items.Clear();
+                ddlMarca.Items.Add(new ListItem("-- Marca --", ""));
+                using (var cmd4 = new SqlCommand(
                     "SELECT idmarca, nombre FROM dbo.MARCAS WHERE activo=1", cn))
-                using (var dr = cmd.ExecuteReader())
-                    while (dr.Read())
+                using (var dr4 = cmd4.ExecuteReader())
+                    while (dr4.Read())
                         ddlMarca.Items.Add(new ListItem(
-                            dr["nombre"].ToString(),
-                            dr["idmarca"].ToString()));
-
-                // Tiendas
-                using (var cmd = new SqlCommand(
-                    "SELECT idtienda, nombre FROM dbo.TIENDAS WHERE activo=1", cn))
-                using (var dr = cmd.ExecuteReader())
-                    while (dr.Read())
-                        ddlTienda.Items.Add(new ListItem(
-                            dr["nombre"].ToString(),
-                            dr["idtienda"].ToString()));
-
-                // **Colores** (ahora SIN filtrar por 'activo')
-                using (var cmd = new SqlCommand(
-                    "SELECT idcolor, nombre FROM dbo.COLORES", cn))
-                using (var dr = cmd.ExecuteReader())
-                {
-                    while (dr.Read())
-                    {
-                        var txt = dr["nombre"].ToString();
-                        var val = dr["idcolor"].ToString();
-                        ddlColor.Items.Add(new ListItem(txt, val));
-                        ddlImgColor.Items.Add(new ListItem(txt, val));
-                    }
-                }
-
-                // Medidas
-                using (var cmd = new SqlCommand(
-                    "SELECT idmedida, nombre FROM dbo.MEDIDAS WHERE activo=1", cn))
-                using (var dr = cmd.ExecuteReader())
-                    while (dr.Read())
-                        ddlMedida.Items.Add(new ListItem(
-                            dr["nombre"].ToString(),
-                            dr["idmedida"].ToString()));
+                            dr4["nombre"].ToString(),
+                            dr4["idmarca"].ToString()));
+                ddlMarca.Items.Add(new ListItem("-- Agregar nueva marca --", "0"));
             }
         }
 
-        protected void ddlColor_SelectedIndexChanged(object sender, EventArgs e)
+        protected void ddlUnidad_SelectedIndexChanged(object sender, EventArgs e)
         {
-            pnlColorOtro.Visible = ddlColor.SelectedValue == "0";
+            pnlAddUnidad.Visible = ddlUnidad.SelectedValue == "0";
+        }
+
+        protected void btnGuardarUnidad_Click(object sender, EventArgs e)
+        {
+            string nueva = txtNewUnidad.Text.Trim();
+            if (string.IsNullOrEmpty(nueva)) return;
+
+            int idNew;
+            using (var cn = new SqlConnection(_connString))
+            using (var cmd = new SqlCommand(
+                "INSERT INTO dbo.UNIDADDEMEDIDAS(nombre) OUTPUT INSERTED.idunidaddemedida VALUES(@n)", cn))
+            {
+                cmd.Parameters.AddWithValue("@n", nueva);
+                cn.Open();
+                idNew = (int)cmd.ExecuteScalar();
+            }
+
+            CargarListas();
+            ddlUnidad.SelectedValue = idNew.ToString();
+            pnlAddUnidad.Visible = false;
+            txtNewUnidad.Text = "";
+        }
+
+        protected void ddlMarca_SelectedIndexChanged(object sender, EventArgs e)
+        {
+            pnlAddMarca.Visible = ddlMarca.SelectedValue == "0";
+        }
+
+        protected void btnGuardarMarca_Click(object sender, EventArgs e)
+        {
+            string nueva = txtNewMarca.Text.Trim();
+            if (string.IsNullOrEmpty(nueva)) return;
+
+            int idNew;
+            using (var cn = new SqlConnection(_connString))
+            using (var cmd = new SqlCommand(
+                "INSERT INTO dbo.MARCAS(nombre) OUTPUT INSERTED.idmarca VALUES(@n)", cn))
+            {
+                cmd.Parameters.AddWithValue("@n", nueva);
+                cn.Open();
+                idNew = (int)cmd.ExecuteScalar();
+            }
+
+            CargarListas();
+            ddlMarca.SelectedValue = idNew.ToString();
+            pnlAddMarca.Visible = false;
+            txtNewMarca.Text = "";
         }
 
         protected void btnGuardarProducto_Click(object sender, EventArgs e)
         {
-            lblError.Visible = false;
+            if (!Page.IsValid) return;
 
-            // --- Validaciones con TryParse ---
-            if (!int.TryParse(ddlSubcategoria.SelectedValue, out int subcat))
-            { MostrarError("Debe seleccionar una subcategoría."); return; }
-            if (!int.TryParse(ddlUnidad.SelectedValue, out int unidad))
-            { MostrarError("Debe seleccionar una unidad de medida."); return; }
-            if (!int.TryParse(ddlMarca.SelectedValue, out int marca))
-            { MostrarError("Debe seleccionar una marca."); return; }
-            if (string.IsNullOrWhiteSpace(txtNombre.Text))
-            { MostrarError("El nombre no puede quedar vacío."); return; }
-            if (!DateTime.TryParse(txtFecha.Text, out DateTime fecha))
-            { MostrarError("La fecha no es válida."); return; }
-            if (!long.TryParse(txtCodigoBarras.Text.Trim(), out long codBarras))
-            { MostrarError("El código de barras debe ser un número."); return; }
-            if (!float.TryParse(txtDescuento.Text.Trim(), out float descuento))
-            { MostrarError("El descuento debe ser un número."); return; }
-            if (!decimal.TryParse(txtPrecioUnidad.Text.Trim(), out decimal precioUni))
-            { MostrarError("El precio unidad debe ser decimal."); return; }
-            if (!decimal.TryParse(txtPrecioTres.Text.Trim(), out decimal precioTres))
-            { MostrarError("El precio “3 o más” debe ser decimal."); return; }
-            if (!decimal.TryParse(txtPrecioDocena.Text.Trim(), out decimal precioDocena))
-            { MostrarError("El precio docena debe ser decimal."); return; }
-            if (!decimal.TryParse(txtPrecioFardo.Text.Trim(), out decimal precioFardo))
-            { MostrarError("El precio fardo debe ser decimal."); return; }
-            if (!decimal.TryParse(txtPrecioCompra.Text.Trim(), out decimal precioCompra))
-            { MostrarError("El precio de compra debe ser decimal."); return; }
-            if (!int.TryParse(ddlTienda.SelectedValue, out int tienda))
-            { MostrarError("Debe seleccionar una tienda."); return; }
-            if (!int.TryParse(ddlMedida.SelectedValue, out int medida))
-            { MostrarError("Debe seleccionar una medida."); return; }
-            if (!int.TryParse(txtExistencia.Text.Trim(), out int existencia))
-            { MostrarError("La existencia debe ser un número entero."); return; }
-
-            // Campos opcionales
+            // Lectura de campos fijos
+            int subcat = int.Parse(ddlSubcategoria.SelectedValue);
+            int unidad = int.Parse(ddlUnidad.SelectedValue);
+            int marca = int.Parse(ddlMarca.SelectedValue);
+            string nombre = txtNombre.Text.Trim();
             string referencia = txtReferencia.Text.Trim();
+            long codBarras = long.Parse(txtCodigoBarras.Text.Trim());
             bool activo = chkActivo.Checked;
             string tipoProd = txtTipo.Text.Trim();
-            string atrNom = txtAtrNombre.Text.Trim();
-            string atrDesc = txtAtrDesc.Text.Trim();
-            string descCompra = txtDescCompra.Text.Trim();
-            string imgDesc = txtImgDesc.Text.Trim();
+            float descuento = float.Parse(txtDescuento.Text.Trim());
 
-            // **Color dinámico** (si eligió “Otro...”)
-            int colorId;
-            if (pnlColorOtro.Visible &&
-                !string.IsNullOrWhiteSpace(txtColorOtro.Text))
-            {
-                using (var cn = new SqlConnection(_connString))
-                using (var cmd = new SqlCommand(@"
-    INSERT INTO dbo.COLORES (nombre, fecha)
-    OUTPUT INSERTED.idcolor
-    VALUES (@nom, GETDATE())", cn))
-                {
-                    cn.Open();
-                    cmd.Parameters.AddWithValue("@nom", txtColorOtro.Text.Trim());
-                    colorId = (int)cmd.ExecuteScalar();
-                }
-            }
-            else
-            {
-                colorId = int.Parse(ddlColor.SelectedValue);
-            }
+            // Filas dinámicas
+            var tarifas = Request.Form.GetValues("tarifa") ?? new string[0];
+            var aplicaEn = Request.Form.GetValues("aplicaEn") ?? new string[0];
+            var cantMin = Request.Form.GetValues("cantMin") ?? new string[0];
+            var precioVal = Request.Form.GetValues("precioVal") ?? new string[0];
+            var exColor = Request.Form.GetValues("exColor") ?? new string[0];
+            var exMedida = Request.Form.GetValues("exMedida") ?? new string[0];
+            var exCant = Request.Form.GetValues("exCant") ?? new string[0];
 
-            // --- Leer bytes de la imagen si hay ---
+            // Imagen
             byte[] imgBytes = null;
             if (fuImagen.HasFile)
             {
@@ -184,7 +159,8 @@ namespace PandaMay.Productos
                 }
             }
 
-            // --- Inserción en BD con transacción ---
+            int newId;  // Declarado aquí
+
             using (var cn = new SqlConnection(_connString))
             {
                 cn.Open();
@@ -192,127 +168,101 @@ namespace PandaMay.Productos
                 {
                     try
                     {
-                        int newId;
-                        // 1) PRODUCTOS
+                        // 1) INSERT PRODUCTO
                         using (var cmd = new SqlCommand(@"
     INSERT INTO dbo.PRODUCTOS
       (idsubcategoria,idunidaddemedida,idmarca,nombre,fecha,
        referencia,codigodebarras,activo,tipodeproducto,descuento)
     OUTPUT INSERTED.idproducto
     VALUES
-      (@sub,@uni,@mar,@nom,@fec,@ref,@cb,@act,@tip,@des)",
-                            cn, tx))
+      (@sub,@uni,@mar,@nom,GETDATE(),@ref,@cb,@act,@tip,@des)", cn, tx))
                         {
                             cmd.Parameters.AddWithValue("@sub", subcat);
                             cmd.Parameters.AddWithValue("@uni", unidad);
                             cmd.Parameters.AddWithValue("@mar", marca);
-                            cmd.Parameters.AddWithValue("@nom", txtNombre.Text.Trim());
-                            cmd.Parameters.AddWithValue("@fec", fecha);
+                            cmd.Parameters.AddWithValue("@nom", nombre);
                             cmd.Parameters.AddWithValue("@ref", referencia);
                             cmd.Parameters.AddWithValue("@cb", codBarras);
                             cmd.Parameters.AddWithValue("@act", activo);
                             cmd.Parameters.AddWithValue("@tip", tipoProd);
                             cmd.Parameters.AddWithValue("@des", descuento);
+
                             newId = (int)cmd.ExecuteScalar();
                         }
 
-                        // 2) PRECIOS VENTA…
-                        var tiposV = new[] { "unidad", "3 o más", "docena", "fardo" };
-                        var valsV = new[] { precioUni, precioTres, precioDocena, precioFardo };
-                        for (int i = 0; i < tiposV.Length; i++)
+                        // 2) INSERT precios dinámicos
+                        for (int i = 0; i < tarifas.Length; i++)
                         {
                             using (var cmd2 = new SqlCommand(@"
     INSERT INTO dbo.PRECIOS
-      (idproducto,nombre,precio,fecha,activo)
+      (idproducto,nombre,precio,cantidadmin,aplica,fecha)
     VALUES
-      (@id,@nom,@pre,GETDATE(),1)", cn, tx))
+      (@id,@nom,@pre,@min,@app,GETDATE())", cn, tx))
                             {
                                 cmd2.Parameters.AddWithValue("@id", newId);
-                                cmd2.Parameters.AddWithValue("@nom", tiposV[i]);
-                                cmd2.Parameters.AddWithValue("@pre", valsV[i]);
+                                cmd2.Parameters.AddWithValue("@nom", tarifas[i]);
+                                cmd2.Parameters.AddWithValue("@pre", decimal.Parse(precioVal[i]));
+                                cmd2.Parameters.AddWithValue("@min", int.Parse(cantMin[i]));
+                                cmd2.Parameters.AddWithValue("@app", aplicaEn[i]);
                                 cmd2.ExecuteNonQuery();
                             }
                         }
 
-                        // 3) PRECIO COMPRA…
-                        using (var cmd3 = new SqlCommand(@"
-    INSERT INTO dbo.PRECIOSCOMPRAS
-      (idproducto,descripcion,precio,activo,fecha)
-    VALUES
-      (@id,@desc,@pre,1,GETDATE())", cn, tx))
+                        // 3) INSERT existencias dinámicas
+                        for (int i = 0; i < exColor.Length; i++)
                         {
-                            cmd3.Parameters.AddWithValue("@id", newId);
-                            cmd3.Parameters.AddWithValue("@desc", descCompra);
-                            cmd3.Parameters.AddWithValue("@pre", precioCompra);
-                            cmd3.ExecuteNonQuery();
-                        }
-
-                        // 4) EXISTENCIAS…
-                        using (var cmd4 = new SqlCommand(@"
+                            using (var cmd3 = new SqlCommand(@"
     INSERT INTO dbo.EXISTENCIAS
-      (idtienda,idproducto,idcolor,idmedida,cantidad,fechaingreso)
+      (idtienda,idproducto,color,medida,cantidad,fechaingreso)
     VALUES
       (@tid,@id,@col,@med,@can,GETDATE())", cn, tx))
-                        {
-                            cmd4.Parameters.AddWithValue("@tid", tienda);
-                            cmd4.Parameters.AddWithValue("@id", newId);
-                            cmd4.Parameters.AddWithValue("@col", colorId);
-                            cmd4.Parameters.AddWithValue("@med", medida);
-                            cmd4.Parameters.AddWithValue("@can", existencia);
-                            cmd4.ExecuteNonQuery();
-                        }
-
-                        // 5) ATRIBUTOS (opcional)…
-                        if (!string.IsNullOrWhiteSpace(atrNom))
-                        {
-                            using (var cmd5 = new SqlCommand(@"
-    INSERT INTO dbo.ATRIBUTOS
-      (idproducto,nombre,descripcion,activo,fecha)
-    VALUES
-      (@id,@nom,@des,1,GETDATE())", cn, tx))
                             {
-                                cmd5.Parameters.AddWithValue("@id", newId);
-                                cmd5.Parameters.AddWithValue("@nom", atrNom);
-                                cmd5.Parameters.AddWithValue("@des", atrDesc);
-                                cmd5.ExecuteNonQuery();
+                                cmd3.Parameters.AddWithValue("@tid", int.Parse(ddlTienda.SelectedValue));
+                                cmd3.Parameters.AddWithValue("@id", newId);
+                                cmd3.Parameters.AddWithValue("@col", exColor[i]);
+                                cmd3.Parameters.AddWithValue("@med", exMedida[i]);
+                                cmd3.Parameters.AddWithValue("@can", int.Parse(exCant[i]));
+                                cmd3.ExecuteNonQuery();
                             }
                         }
 
-                        // 6) IMÁGENES (opcional)…
+                        // 4) INSERT imagen (si existe)
                         if (imgBytes != null)
                         {
-                            using (var cmd6 = new SqlCommand(@"
+                            using (var cmd4 = new SqlCommand(@"
     INSERT INTO dbo.IMAGENES
       (idcolor,foto,descripcion,activo,fecha)
     VALUES
       (@col,@bin,@desc,1,GETDATE())", cn, tx))
                             {
-                                cmd6.Parameters.AddWithValue("@col", int.Parse(ddlImgColor.SelectedValue));
-                                cmd6.Parameters.AddWithValue("@bin", imgBytes);
-                                cmd6.Parameters.AddWithValue("@desc", imgDesc);
-                                cmd6.ExecuteNonQuery();
+                                // En lugar de operador ternario, usamos if/else:
+                                if (exColor.Length > 0)
+                                    cmd4.Parameters.AddWithValue("@col", exColor[0]);
+                                else
+                                    cmd4.Parameters.AddWithValue("@col", DBNull.Value);
+
+                                cmd4.Parameters.AddWithValue("@bin", imgBytes);
+                                cmd4.Parameters.AddWithValue("@desc", txtImgDesc.Text.Trim());
+                                cmd4.ExecuteNonQuery();
                             }
                         }
 
                         tx.Commit();
                     }
-                    catch (Exception ex)
+                    catch
                     {
                         tx.Rollback();
-                        MostrarError("Ocurrió un error: " + ex.Message);
-                        return;
+                        throw;
                     }
                 }
             }
 
-            // Redirijo al listado si todo funcionó
             Response.Redirect("Productos.aspx");
         }
 
-        private void MostrarError(string msg)
+        protected void btnRegresar_Click(object sender, EventArgs e)
         {
-            lblError.Text = msg;
-            lblError.Visible = true;
+            Response.Redirect("Productos.aspx");
         }
     }
 }

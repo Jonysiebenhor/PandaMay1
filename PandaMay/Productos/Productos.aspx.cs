@@ -1,58 +1,66 @@
 ﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Web;
+
 using System.Web.UI;
 using System.Web.UI.WebControls;
-using PandaMay;  // tu espacio de nombres donde está Conectar
+using PandaMay;  // Ajusta al namespace donde esté tu clase Conectar
+
 namespace PandaMay.Productos
 {
-    public partial class Productos : System.Web.UI.Page
+    public partial class Productos : Page
     {
         Conectar conectado = new Conectar();
 
         protected void Page_Load(object sender, EventArgs e)
         {
-            // 1) Validar sesión siempre
+            // 1) Validar sesión
             if (Session["usuario"] == null)
                 Response.Redirect("~/Login.aspx");
 
             if (!IsPostBack)
             {
-                // 2) Al cargar, ocultar el panel de la tabla
-                pnlTabla.Visible = false;
+                // 2) Panel de tabla siempre visible y cargamos datos
+                pnlTabla.Visible = true;
+                CargarProductos();
             }
         }
 
-        protected void btnCrearProducto_Click(object sender, EventArgs e)
+        // Método auxiliar para bindear el grid principal
+        private void CargarProductos()
         {
-            // 3) Cargar la lista de productos
+
             conectado.conectar();
             GridView1.DataSource = conectado.productos();
             GridView1.DataBind();
             conectado.desconectar();
 
-            // 4) Mostrar la tabla y ocultar el botón inicial
-            pnlTabla.Visible = true;
-            btnCrearProducto.Visible = false;
+
         }
 
+        // Regresa al menú principal
         protected void btnRegresar_Click(object sender, EventArgs e)
         {
-            // 5) Volver a la vista inicial
-            pnlTabla.Visible = false;
-            btnCrearProducto.Visible = true;
+            Response.Redirect("~/Default.aspx");
         }
 
+        /// <summary>
+        /// Redirige a CrearProducto.aspx en la misma pestaña.
+        /// </summary>
+        protected void btnCrearProducto_Click(object sender, EventArgs e)
+        {
+            Response.Redirect("CrearProducto.aspx");
+        }
+
+        // Al seleccionar un producto, cargamos los grids de detalle
         protected void Select1(object sender, GridViewSelectEventArgs e)
         {
-            // 1) Recuperar el idproducto de la fila seleccionada
-            int idProducto = Convert.ToInt32(GridView1.DataKeys[e.NewSelectedIndex].Value);
+            int idProducto = Convert.ToInt32(
+                GridView1.DataKeys[e.NewSelectedIndex].Value);
 
-            // 2) Mostrar el panel de detalles
+           
+           
             pnlDetalles.Visible = true;
 
-            // 3) Cargar cada GridView llamando a tu método genérico
+           
             conectado.conectar();
 
             gvCombosProductos.DataSource = conectado.GetByProducto("COMBOSPRODUCTOS", idProducto);
@@ -64,7 +72,7 @@ namespace PandaMay.Productos
             gvAtributos.DataSource = conectado.GetByProducto("ATRIBUTOS", idProducto);
             gvExistencias.DataSource = conectado.GetByProducto("EXISTENCIAS", idProducto);
 
-            // 4) Hacer DataBind de cada uno
+           
             gvCombosProductos.DataBind();
             gvDetallesCompras.DataBind();
             gvDetallesTraslados.DataBind();
@@ -77,24 +85,27 @@ namespace PandaMay.Productos
             conectado.desconectar();
         }
 
+        // Búsqueda en vivo
         protected void txtBuscar_TextChanged(object sender, EventArgs e)
         {
-            // Si el usuario borra todo, volvemos a mostrar la lista completa
+
             string criterio = txtBuscar.Text.Trim();
             conectado.conectar();
 
-            if (criterio == "")
+            if (String.IsNullOrEmpty(criterio))
                 GridView1.DataSource = conectado.productos();
             else
                 GridView1.DataSource = conectado.buscarproducto(criterio);
 
             GridView1.DataBind();
             conectado.desconectar();
-
-            // Aseguramos que, si venía oculto, muestre la tabla
-            pnlTabla.Visible = true;
-            btnCrearProducto.Visible = false;
+       
+        
+        
+        
+        
+        
         }
-
+   
     }
 }
