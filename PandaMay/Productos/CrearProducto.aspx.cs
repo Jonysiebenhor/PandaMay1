@@ -2,6 +2,8 @@
 using System.Configuration;
 using System.Data.SqlClient;
 using System.IO;
+using System.Linq;           // para Min()
+using System.Text;
 using System.Web.UI;
 using System.Web.UI.WebControls;
 
@@ -15,7 +17,10 @@ namespace PandaMay.Productos
         protected void Page_Load(object sender, EventArgs e)
         {
             if (!IsPostBack)
+            {
                 CargarListas();
+                RegistrarOpcionesMedidas();
+            }
         }
 
         private void CargarListas()
@@ -24,33 +29,33 @@ namespace PandaMay.Productos
             {
                 cn.Open();
 
-                // 1) Subcategorías
+                // 1) SUBCATEGORIAS
                 ddlSubcategoria.Items.Clear();
                 ddlSubcategoria.Items.Add(new ListItem("-- Subcategoría --", ""));
                 using (var cmd = new SqlCommand(
-                    "SELECT idsubcategoria, nombre FROM dbo.SUBCATEGORIAS WHERE activo=1", cn))
+                    "SELECT idsubcategoria,nombre FROM dbo.SUBCATEGORIAS WHERE activo=1", cn))
                 using (var dr = cmd.ExecuteReader())
                     while (dr.Read())
                         ddlSubcategoria.Items.Add(new ListItem(
                             dr["nombre"].ToString(),
                             dr["idsubcategoria"].ToString()));
 
-                // 2) Tiendas
+                // 2) TIENDAS
                 ddlTienda.Items.Clear();
                 ddlTienda.Items.Add(new ListItem("-- Tienda --", ""));
                 using (var cmd2 = new SqlCommand(
-                    "SELECT idtienda, nombre FROM dbo.TIENDAS WHERE activo=1", cn))
+                    "SELECT idtienda,nombre FROM dbo.TIENDAS WHERE activo=1", cn))
                 using (var dr2 = cmd2.ExecuteReader())
                     while (dr2.Read())
                         ddlTienda.Items.Add(new ListItem(
                             dr2["nombre"].ToString(),
                             dr2["idtienda"].ToString()));
 
-                // 3) Unidades
+                // 3) UNIDADES
                 ddlUnidad.Items.Clear();
                 ddlUnidad.Items.Add(new ListItem("-- Unidad --", ""));
                 using (var cmd3 = new SqlCommand(
-                    "SELECT idunidaddemedida, nombre FROM dbo.UNIDADDEMEDIDAS WHERE activo=1", cn))
+                    "SELECT idunidaddemedida,nombre FROM dbo.UNIDADDEMEDIDAS WHERE activo=1", cn))
                 using (var dr3 = cmd3.ExecuteReader())
                     while (dr3.Read())
                         ddlUnidad.Items.Add(new ListItem(
@@ -58,11 +63,11 @@ namespace PandaMay.Productos
                             dr3["idunidaddemedida"].ToString()));
                 ddlUnidad.Items.Add(new ListItem("-- Agregar nueva unidad --", "0"));
 
-                // 4) Marcas
+                // 4) MARCAS
                 ddlMarca.Items.Clear();
                 ddlMarca.Items.Add(new ListItem("-- Marca --", ""));
                 using (var cmd4 = new SqlCommand(
-                    "SELECT idmarca, nombre FROM dbo.MARCAS WHERE activo=1", cn))
+                    "SELECT idmarca,nombre FROM dbo.MARCAS WHERE activo=1", cn))
                 using (var dr4 = cmd4.ExecuteReader())
                     while (dr4.Read())
                         ddlMarca.Items.Add(new ListItem(
@@ -70,11 +75,11 @@ namespace PandaMay.Productos
                             dr4["idmarca"].ToString()));
                 ddlMarca.Items.Add(new ListItem("-- Agregar nueva marca --", "0"));
 
-                // 5) Colores (imagen)
+                // 5) COLORES IMAGEN
                 ddlImgColor.Items.Clear();
                 ddlImgColor.Items.Add(new ListItem("-- Color imagen --", ""));
                 using (var cmd5 = new SqlCommand(
-                    "SELECT idcolor, nombre FROM dbo.COLORES", cn))
+                    "SELECT idcolor,nombre FROM dbo.COLORES", cn))
                 using (var dr5 = cmd5.ExecuteReader())
                     while (dr5.Read())
                         ddlImgColor.Items.Add(new ListItem(
@@ -83,10 +88,34 @@ namespace PandaMay.Productos
             }
         }
 
-        protected void ddlUnidad_SelectedIndexChanged(object sender, EventArgs e)
-            => pnlAddUnidad.Visible = ddlUnidad.SelectedValue == "0";
+        private void RegistrarOpcionesMedidas()
+        {
+            // Genera <option> para MEDIDAS
+            var sb = new StringBuilder();
+            using (var cn = new SqlConnection(_connString))
+            using (var cmd = new SqlCommand("SELECT idmedida,nombre FROM dbo.MEDIDAS ORDER BY nombre", cn))
+            {
+                cn.Open();
+                using (var dr = cmd.ExecuteReader())
+                    while (dr.Read())
+                        sb.AppendFormat("<option value=\"{0}\">{1}</option>",
+                                        dr["idmedida"], dr["nombre"]);
+            }
 
-        protected void btnGuardarUnidad_Click(object sender, EventArgs e)
+            // Inyecta en JS
+            var script = $@"
+<script type=""text/javascript"">
+  var medidasOptions = `{sb}`;
+</script>";
+            ClientScript.RegisterStartupScript(this.GetType(), "medidasTpl", script);
+        }
+
+        protected void ddlUnidad_SelectedIndexChanged(object s, EventArgs e)
+        {
+            pnlAddUnidad.Visible = ddlUnidad.SelectedValue == "0";
+        }
+
+        protected void btnGuardarUnidad_Click(object s, EventArgs e)
         {
             var nueva = txtNewUnidad.Text.Trim();
             if (string.IsNullOrEmpty(nueva)) return;
@@ -94,9 +123,9 @@ namespace PandaMay.Productos
             int idNew;
             using (var cn = new SqlConnection(_connString))
             using (var cmd = new SqlCommand(@"
-INSERT INTO dbo.UNIDADDEMEDIDAS(nombre, activo, fecha)
+INSERT INTO dbo.UNIDADDEMEDIDAS(nombre,activo)
  OUTPUT INSERTED.idunidaddemedida
- VALUES(@n,1,CONVERT(INT,GETDATE()))", cn))
+ VALUES(@n,1)", cn))
             {
                 cmd.Parameters.AddWithValue("@n", nueva);
                 cn.Open();
@@ -109,10 +138,12 @@ INSERT INTO dbo.UNIDADDEMEDIDAS(nombre, activo, fecha)
             txtNewUnidad.Text = "";
         }
 
-        protected void ddlMarca_SelectedIndexChanged(object sender, EventArgs e)
-            => pnlAddMarca.Visible = ddlMarca.SelectedValue == "0";
+        protected void ddlMarca_SelectedIndexChanged(object s, EventArgs e)
+        {
+            pnlAddMarca.Visible = ddlMarca.SelectedValue == "0";
+        }
 
-        protected void btnGuardarMarca_Click(object sender, EventArgs e)
+        protected void btnGuardarMarca_Click(object s, EventArgs e)
         {
             var nueva = txtNewMarca.Text.Trim();
             if (string.IsNullOrEmpty(nueva)) return;
@@ -120,9 +151,9 @@ INSERT INTO dbo.UNIDADDEMEDIDAS(nombre, activo, fecha)
             int idNew;
             using (var cn = new SqlConnection(_connString))
             using (var cmd = new SqlCommand(@"
-INSERT INTO dbo.MARCAS(nombre, activo, fecha)
+INSERT INTO dbo.MARCAS(nombre,activo)
  OUTPUT INSERTED.idmarca
- VALUES(@n,1,CONVERT(INT,GETDATE()))", cn))
+ VALUES(@n,1)", cn))
             {
                 cmd.Parameters.AddWithValue("@n", nueva);
                 cn.Open();
@@ -135,35 +166,42 @@ INSERT INTO dbo.MARCAS(nombre, activo, fecha)
             txtNewMarca.Text = "";
         }
 
-        protected void btnGuardarProducto_Click(object sender, EventArgs e)
+        protected void btnGuardarProducto_Click(object s, EventArgs e)
         {
             if (!Page.IsValid) return;
             lblError.Visible = false;
 
-            // 1) Campos principales
-            int subcat = int.TryParse(ddlSubcategoria.SelectedValue, out var sc) ? sc : 0;
+            // Validar dropdowns
             if (!int.TryParse(ddlUnidad.SelectedValue, out var unidad) || unidad == 0)
-            { MostrarError("Seleccione o cree una unidad válida."); return; }
+            {
+                MostrarError("Seleccione o cree una unidad válida.");
+                return;
+            }
             if (!int.TryParse(ddlMarca.SelectedValue, out var marca) || marca == 0)
-            { MostrarError("Seleccione o cree una marca válida."); return; }
+            {
+                MostrarError("Seleccione o cree una marca válida.");
+                return;
+            }
 
+            // Leer campos
+            var sc = int.TryParse(ddlSubcategoria.SelectedValue, out var tmpSc) ? tmpSc : 0;
             var nombre = txtNombre.Text.Trim();
             var referencia = txtReferencia.Text.Trim();
-            var cb = long.TryParse(txtCodigoBarras.Text.Trim(), out var tmpcb) ? tmpcb : 0L;
+            var cb = long.TryParse(txtCodigoBarras.Text.Trim(), out var tmpCb) ? tmpCb : 0L;
             var activo = chkActivo.Checked;
-            var tipoProd = txtTipo.Text.Trim();
-            var descuento = float.TryParse(txtDescuento.Text.Trim(), out var d) ? d : 0f;
+            var tipo = txtTipo.Text.Trim();
+            var descuento = float.TryParse(txtDescuento.Text.Trim(), out var tmpD) ? tmpD : 0f;
 
-            // 2) Arrays dinámicos
+            // Arrays dinámicos
             var tarifas = Request.Form.GetValues("tarifa") ?? new string[0];
             var aplicaEn = Request.Form.GetValues("aplicaEn") ?? new string[0];
             var cantMin = Request.Form.GetValues("cantMin") ?? new string[0];
             var precioVal = Request.Form.GetValues("precioVal") ?? new string[0];
             var exColor = Request.Form.GetValues("exColor") ?? new string[0];
-            var exMedida = Request.Form.GetValues("exMedida") ?? new string[0];
+            var exMed = Request.Form.GetValues("exMedida") ?? new string[0];
             var exCant = Request.Form.GetValues("exCant") ?? new string[0];
 
-            // 3) Imagen
+            // Imagen
             byte[] imgBytes = null;
             if (fuImagen.HasFile)
             {
@@ -182,15 +220,15 @@ INSERT INTO dbo.MARCAS(nombre, activo, fecha)
                     bool committed = false;
                     try
                     {
-                        // INSERT PRODUCTOS
+                        // 1) PRODUCTOS
                         int newId;
                         using (var cmd = new SqlCommand(@"
 INSERT INTO dbo.PRODUCTOS
- (idsubcategoria,idunidaddemedida,idmarca,nombre,fecha,
+ (idsubcategoria,idunidaddemedida,idmarca,nombre,
   referencia,codigodebarras,activo,tipodeproducto,descuento)
  OUTPUT INSERTED.idproducto
  VALUES
- (@sub,@uni,@mar,@nom,CONVERT(INT,GETDATE()),
+ (@sub,@uni,@mar,@nom,
   @ref,@cb,@act,@tip,@des)", cn, tx))
                         {
                             cmd.Parameters.AddWithValue("@sub", sc > 0 ? (object)sc : DBNull.Value);
@@ -200,19 +238,20 @@ INSERT INTO dbo.PRODUCTOS
                             cmd.Parameters.AddWithValue("@ref", referencia);
                             cmd.Parameters.AddWithValue("@cb", cb);
                             cmd.Parameters.AddWithValue("@act", activo);
-                            cmd.Parameters.AddWithValue("@tip", tipoProd);
+                            cmd.Parameters.AddWithValue("@tip", tipo);
                             cmd.Parameters.AddWithValue("@des", descuento);
                             newId = (int)cmd.ExecuteScalar();
                         }
 
-                        // INSERT PRECIOS
+                        // 2) PRECIOS (Evita IndexOutOfRange)
+                        int precioCount = new[] { tarifas.Length, aplicaEn.Length, cantMin.Length, precioVal.Length }.Min();
                         using (var cmd2 = new SqlCommand(@"
 INSERT INTO dbo.PRECIOS
- (idproducto,nombre,descripcion,precio,cantidad,activo,fecha)
+ (idproducto,nombre,descripcion,precio,cantidad,activo)
  VALUES
- (@id,@nom,@desc,@pre,@cant,1,CONVERT(INT,GETDATE()))", cn, tx))
+ (@id,@nom,@desc,@pre,@cant,1)", cn, tx))
                         {
-                            for (int i = 0; i < tarifas.Length; i++)
+                            for (int i = 0; i < precioCount; i++)
                             {
                                 cmd2.Parameters.Clear();
                                 cmd2.Parameters.AddWithValue("@id", newId);
@@ -224,49 +263,54 @@ INSERT INTO dbo.PRECIOS
                             }
                         }
 
-                        // INSERT EXISTENCIAS
-                        for (int i = 0; i < exColor.Length; i++)
+                        // 3) EXISTENCIAS (Evita IndexOutOfRange)
+                        int existCount = new[] { exColor.Length, exMed.Length, exCant.Length }.Min();
+                        for (int i = 0; i < existCount; i++)
                         {
-                            // validar exMedida es ID válido
-                            if (!int.TryParse(exMedida[i], out var medId) || medId == 0)
+                            // colorId lookup
+                            int colorId;
+                            if (!int.TryParse(exColor[i], out colorId))
                             {
-                                MostrarError($"Seleccione una unidad válida en fila {i + 1}.");
-                                tx.Rollback();
-                                return;
+                                using (var lc = new SqlCommand(
+                                    "SELECT idcolor FROM dbo.COLORES WHERE nombre=@n", cn, tx))
+                                {
+                                    lc.Parameters.AddWithValue("@n", exColor[i]);
+                                    var o = lc.ExecuteScalar();
+                                    colorId = o != null ? Convert.ToInt32(o) : 0;
+                                }
                             }
+
+                            // medId (dropdown)
+                            int medId = int.Parse(exMed[i]);
 
                             using (var cmd3 = new SqlCommand(@"
 INSERT INTO dbo.EXISTENCIAS
- (idtienda,idproducto,idcolor,idmedida,cantidad,fechaingreso)
+ (idtienda,idproducto,idcolor,idmedida,cantidad)
  VALUES
- (@tid,@id,@col,@med,@can,CONVERT(INT,GETDATE()))", cn, tx))
+ (@tid,@id,@col,@med,@can)", cn, tx))
                             {
                                 cmd3.Parameters.AddWithValue("@tid", int.Parse(ddlTienda.SelectedValue));
                                 cmd3.Parameters.AddWithValue("@id", newId);
-                                cmd3.Parameters.AddWithValue("@col",
-                                    int.TryParse(exColor[i], out var c2) && c2 > 0
-                                      ? (object)c2
-                                      : DBNull.Value);
+                                cmd3.Parameters.AddWithValue("@col", colorId > 0 ? (object)colorId : DBNull.Value);
                                 cmd3.Parameters.AddWithValue("@med", medId);
                                 cmd3.Parameters.AddWithValue("@can", int.Parse(exCant[i]));
                                 cmd3.ExecuteNonQuery();
                             }
                         }
 
-                        // INSERT IMÁGENES
+                        // 4) IMÁGENES
                         if (imgBytes != null)
                         {
                             using (var cmd4 = new SqlCommand(@"
 INSERT INTO dbo.IMAGENES
- (idcolor,foto,descripcion,activo,fecha)
+ (idcolor,foto,descripcion,activo)
  VALUES
- (@col,@bin,@desc,1,CONVERT(INT,GETDATE()))", cn, tx))
+ (@col,@bin,@desc,1)", cn, tx))
                             {
                                 if (int.TryParse(ddlImgColor.SelectedValue, out var ic) && ic > 0)
                                     cmd4.Parameters.AddWithValue("@col", ic);
                                 else
                                     cmd4.Parameters.AddWithValue("@col", DBNull.Value);
-
                                 cmd4.Parameters.AddWithValue("@bin", imgBytes);
                                 cmd4.Parameters.AddWithValue("@desc", txtImgDesc.Text.Trim());
                                 cmd4.ExecuteNonQuery();
@@ -279,20 +323,13 @@ INSERT INTO dbo.IMAGENES
                     }
                     catch (Exception ex)
                     {
-                        // Sólo rollback si no se hizo commit
-                        if (!committed && tx.Connection != null)
-                        {
-                            try { tx.Rollback(); }
-                            catch { /* ya estaba terminada */ }
-                        }
+                        if (!committed)
+                            try { tx.Rollback(); } catch { }
                         MostrarError("Ocurrió un error: " + ex.Message);
                     }
                 }
             }
         }
-
-        protected void btnRegresar_Click(object sender, EventArgs e)
-            => Response.Redirect("Productos.aspx");
 
         private void MostrarError(string msg)
         {

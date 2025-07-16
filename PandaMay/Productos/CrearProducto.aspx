@@ -38,8 +38,11 @@
   <asp:Label ID="lblError" runat="server" ForeColor="Red" Visible="false" />
 
   <!-- Botón Regresar -->
-  <asp:Button ID="btnRegresar" runat="server" CssClass="bluebutton"
-      Text="Regresar" OnClick="btnRegresar_Click" />
+  <asp:Button 
+    ID="btnRegresar" runat="server"
+    CssClass="bluebutton"
+    Text="Regresar"
+    OnClientClick="window.history.back(); return false;" />
 
   <!-- Datos Principales -->
   <fieldset class="section">
@@ -236,7 +239,10 @@
         <label>Color:</label><input class="form-control" type="text" name="exColor" />
       </div>
       <div class="field-group">
-        <label>Medida:</label><input class="form-control" type="text" name="exMedida" />
+        <label>Medida:</label>
+        <select class="form-control" name="exMedida">
+          ${medidasOptions}
+        </select>
       </div>
       <div class="field-group">
         <label>Cantidad:</label><input class="form-control" type="number" name="exCant" />

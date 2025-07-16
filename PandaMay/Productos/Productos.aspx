@@ -22,11 +22,12 @@
     <!-- Cabecera: regresar, crear y buscador -->
     <div style="display:flex; justify-content:center; align-items:center; gap:10px; margin:30px 0;">
       <asp:Button
-        ID="btnRegresar"
-        runat="server"
-        CssClass="orangebutton"
-        Text="Regresar"
-        OnClick="btnRegresar_Click" />
+  ID="btnRegresar"
+  runat="server"
+  CssClass="orangebutton"
+  Text="Regresar"
+  OnClientClick="window.history.back(); return false;" />
+
 
       <asp:Button
         ID="btnCrearProducto"
