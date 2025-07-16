@@ -28,7 +28,7 @@ namespace PandaMay.Productos
                 ddlSubcategoria.Items.Clear();
                 ddlSubcategoria.Items.Add(new ListItem("-- Subcategoría --", ""));
                 using (var cmd = new SqlCommand(
-                    "SELECT idsubcategoria, nombre FROM dbo.SUBCATEGORIAS WHERE activo=1", cn))
+                    "SELECT idsubcategoria,nombre FROM dbo.SUBCATEGORIAS WHERE activo=1", cn))
                 using (var dr = cmd.ExecuteReader())
                     while (dr.Read())
                         ddlSubcategoria.Items.Add(new ListItem(
@@ -39,7 +39,7 @@ namespace PandaMay.Productos
                 ddlTienda.Items.Clear();
                 ddlTienda.Items.Add(new ListItem("-- Tienda --", ""));
                 using (var cmd2 = new SqlCommand(
-                    "SELECT idtienda, nombre FROM dbo.TIENDAS WHERE activo=1", cn))
+                    "SELECT idtienda,nombre FROM dbo.TIENDAS WHERE activo=1", cn))
                 using (var dr2 = cmd2.ExecuteReader())
                     while (dr2.Read())
                         ddlTienda.Items.Add(new ListItem(
@@ -50,7 +50,7 @@ namespace PandaMay.Productos
                 ddlUnidad.Items.Clear();
                 ddlUnidad.Items.Add(new ListItem("-- Unidad --", ""));
                 using (var cmd3 = new SqlCommand(
-                    "SELECT idunidaddemedida, nombre FROM dbo.UNIDADDEMEDIDAS WHERE activo=1", cn))
+                    "SELECT idunidaddemedida,nombre FROM dbo.UNIDADDEMEDIDAS WHERE activo=1", cn))
                 using (var dr3 = cmd3.ExecuteReader())
                     while (dr3.Read())
                         ddlUnidad.Items.Add(new ListItem(
@@ -62,13 +62,24 @@ namespace PandaMay.Productos
                 ddlMarca.Items.Clear();
                 ddlMarca.Items.Add(new ListItem("-- Marca --", ""));
                 using (var cmd4 = new SqlCommand(
-                    "SELECT idmarca, nombre FROM dbo.MARCAS WHERE activo=1", cn))
+                    "SELECT idmarca,nombre FROM dbo.MARCAS WHERE activo=1", cn))
                 using (var dr4 = cmd4.ExecuteReader())
                     while (dr4.Read())
                         ddlMarca.Items.Add(new ListItem(
                             dr4["nombre"].ToString(),
                             dr4["idmarca"].ToString()));
                 ddlMarca.Items.Add(new ListItem("-- Agregar nueva marca --", "0"));
+
+                // Colores para la imagen (sin filtrar por columna inexistente)
+                ddlImgColor.Items.Clear();
+                ddlImgColor.Items.Add(new ListItem("-- Color imagen --", ""));
+                using (var cmd5 = new SqlCommand(
+                    "SELECT idcolor,nombre FROM dbo.COLORES", cn))
+                using (var dr5 = cmd5.ExecuteReader())
+                    while (dr5.Read())
+                        ddlImgColor.Items.Add(new ListItem(
+                            dr5["nombre"].ToString(),
+                            dr5["idcolor"].ToString()));
             }
         }
 
@@ -79,13 +90,15 @@ namespace PandaMay.Productos
 
         protected void btnGuardarUnidad_Click(object sender, EventArgs e)
         {
-            string nueva = txtNewUnidad.Text.Trim();
+            var nueva = txtNewUnidad.Text.Trim();
             if (string.IsNullOrEmpty(nueva)) return;
 
             int idNew;
             using (var cn = new SqlConnection(_connString))
             using (var cmd = new SqlCommand(
-                "INSERT INTO dbo.UNIDADDEMEDIDAS(nombre) OUTPUT INSERTED.idunidaddemedida VALUES(@n)", cn))
+                "INSERT INTO dbo.UNIDADDEMEDIDAS(nombre,activo,fecha) " +
+                "OUTPUT INSERTED.idunidaddemedida " +
+                "VALUES(@n,1,GETDATE())", cn))
             {
                 cmd.Parameters.AddWithValue("@n", nueva);
                 cn.Open();
@@ -105,13 +118,15 @@ namespace PandaMay.Productos
 
         protected void btnGuardarMarca_Click(object sender, EventArgs e)
         {
-            string nueva = txtNewMarca.Text.Trim();
+            var nueva = txtNewMarca.Text.Trim();
             if (string.IsNullOrEmpty(nueva)) return;
 
             int idNew;
             using (var cn = new SqlConnection(_connString))
             using (var cmd = new SqlCommand(
-                "INSERT INTO dbo.MARCAS(nombre) OUTPUT INSERTED.idmarca VALUES(@n)", cn))
+                "INSERT INTO dbo.MARCAS(nombre,activo,fecha) " +
+                "OUTPUT INSERTED.idmarca " +
+                "VALUES(@n,1,GETDATE())", cn))
             {
                 cmd.Parameters.AddWithValue("@n", nueva);
                 cn.Open();
@@ -127,23 +142,28 @@ namespace PandaMay.Productos
         protected void btnGuardarProducto_Click(object sender, EventArgs e)
         {
             if (!Page.IsValid) return;
+            lblError.Visible = false;
 
-            // Lectura de campos fijos
-            int subcat = int.Parse(ddlSubcategoria.SelectedValue);
-            int unidad = int.Parse(ddlUnidad.SelectedValue);
-            int marca = int.Parse(ddlMarca.SelectedValue);
-            string nombre = txtNombre.Text.Trim();
-            string referencia = txtReferencia.Text.Trim();
-            long codBarras = long.Parse(txtCodigoBarras.Text.Trim());
-            bool activo = chkActivo.Checked;
-            string tipoProd = txtTipo.Text.Trim();
-            float descuento = float.Parse(txtDescuento.Text.Trim());
+            // Lectura de campos
+            int subcat = int.TryParse(ddlSubcategoria.SelectedValue, out var sc) ? sc : 0;
+            if (!int.TryParse(ddlUnidad.SelectedValue, out int unidad) || unidad == 0)
+            { MostrarError("Seleccione o cree una unidad válida."); return; }
+            if (!int.TryParse(ddlMarca.SelectedValue, out int marca) || marca == 0)
+            { MostrarError("Seleccione o cree una marca válida."); return; }
 
-            // Filas dinámicas
+            var nombre = txtNombre.Text.Trim();
+            var referencia = txtReferencia.Text.Trim();
+            var cb = long.TryParse(txtCodigoBarras.Text.Trim(), out var tmpcb) ? tmpcb : 0L;
+            var activo = chkActivo.Checked;
+            var tipoProd = txtTipo.Text.Trim();
+            var descuento = float.TryParse(txtDescuento.Text.Trim(), out var d) ? d : 0f;
+
+            // Dinámicos
             var tarifas = Request.Form.GetValues("tarifa") ?? new string[0];
             var aplicaEn = Request.Form.GetValues("aplicaEn") ?? new string[0];
             var cantMin = Request.Form.GetValues("cantMin") ?? new string[0];
             var precioVal = Request.Form.GetValues("precioVal") ?? new string[0];
+
             var exColor = Request.Form.GetValues("exColor") ?? new string[0];
             var exMedida = Request.Form.GetValues("exMedida") ?? new string[0];
             var exCant = Request.Form.GetValues("exCant") ?? new string[0];
@@ -159,8 +179,6 @@ namespace PandaMay.Productos
                 }
             }
 
-            int newId;  // Declarado aquí
-
             using (var cn = new SqlConnection(_connString))
             {
                 cn.Open();
@@ -168,54 +186,57 @@ namespace PandaMay.Productos
                 {
                     try
                     {
-                        // 1) INSERT PRODUCTO
+                        // 1) PRODUCTOS
+                        int newId;
                         using (var cmd = new SqlCommand(@"
-    INSERT INTO dbo.PRODUCTOS
-      (idsubcategoria,idunidaddemedida,idmarca,nombre,fecha,
-       referencia,codigodebarras,activo,tipodeproducto,descuento)
-    OUTPUT INSERTED.idproducto
-    VALUES
-      (@sub,@uni,@mar,@nom,GETDATE(),@ref,@cb,@act,@tip,@des)", cn, tx))
+INSERT INTO dbo.PRODUCTOS
+ (idsubcategoria,idunidaddemedida,idmarca,nombre,fecha,
+  referencia,codigodebarras,activo,tipodeproducto,descuento)
+ OUTPUT INSERTED.idproducto
+ VALUES
+ ( @sub,@uni,@mar,@nom,GETDATE(),@ref,@cb,@act,@tip,@des )",
+                            cn, tx))
                         {
-                            cmd.Parameters.AddWithValue("@sub", subcat);
+                            cmd.Parameters.AddWithValue("@sub", sc > 0 ? (object)sc : DBNull.Value);
                             cmd.Parameters.AddWithValue("@uni", unidad);
                             cmd.Parameters.AddWithValue("@mar", marca);
                             cmd.Parameters.AddWithValue("@nom", nombre);
                             cmd.Parameters.AddWithValue("@ref", referencia);
-                            cmd.Parameters.AddWithValue("@cb", codBarras);
+                            cmd.Parameters.AddWithValue("@cb", cb);
                             cmd.Parameters.AddWithValue("@act", activo);
                             cmd.Parameters.AddWithValue("@tip", tipoProd);
                             cmd.Parameters.AddWithValue("@des", descuento);
-
                             newId = (int)cmd.ExecuteScalar();
                         }
 
-                        // 2) INSERT precios dinámicos
+                        // 2) PRECIOS
                         for (int i = 0; i < tarifas.Length; i++)
                         {
                             using (var cmd2 = new SqlCommand(@"
-    INSERT INTO dbo.PRECIOS
-      (idproducto,nombre,precio,cantidadmin,aplica,fecha)
-    VALUES
-      (@id,@nom,@pre,@min,@app,GETDATE())", cn, tx))
+INSERT INTO dbo.PRECIOS
+ (idproducto,nombre,descripcion,precio,cantidad,activo,fecha)
+ VALUES
+ (@id,@nom,@desc,@pre,@cant,1,GETDATE())",
+                                cn, tx))
                             {
                                 cmd2.Parameters.AddWithValue("@id", newId);
                                 cmd2.Parameters.AddWithValue("@nom", tarifas[i]);
+                                cmd2.Parameters.AddWithValue("@desc", aplicaEn[i]);
                                 cmd2.Parameters.AddWithValue("@pre", decimal.Parse(precioVal[i]));
-                                cmd2.Parameters.AddWithValue("@min", int.Parse(cantMin[i]));
-                                cmd2.Parameters.AddWithValue("@app", aplicaEn[i]);
+                                cmd2.Parameters.AddWithValue("@cant", int.Parse(cantMin[i]));
                                 cmd2.ExecuteNonQuery();
                             }
                         }
 
-                        // 3) INSERT existencias dinámicas
+                        // 3) EXISTENCIAS
                         for (int i = 0; i < exColor.Length; i++)
                         {
                             using (var cmd3 = new SqlCommand(@"
-    INSERT INTO dbo.EXISTENCIAS
-      (idtienda,idproducto,color,medida,cantidad,fechaingreso)
-    VALUES
-      (@tid,@id,@col,@med,@can,GETDATE())", cn, tx))
+INSERT INTO dbo.EXISTENCIAS
+ (idtienda,idproducto,idcolor,idmedida,cantidad,fechaingreso)
+ VALUES
+ (@tid,@id,@col,@med,@can,GETDATE())",
+                                cn, tx))
                             {
                                 cmd3.Parameters.AddWithValue("@tid", int.Parse(ddlTienda.SelectedValue));
                                 cmd3.Parameters.AddWithValue("@id", newId);
@@ -226,18 +247,18 @@ namespace PandaMay.Productos
                             }
                         }
 
-                        // 4) INSERT imagen (si existe)
+                        // 4) IMAGEN
                         if (imgBytes != null)
                         {
                             using (var cmd4 = new SqlCommand(@"
-    INSERT INTO dbo.IMAGENES
-      (idcolor,foto,descripcion,activo,fecha)
-    VALUES
-      (@col,@bin,@desc,1,GETDATE())", cn, tx))
+INSERT INTO dbo.IMAGENES
+ (idcolor,foto,descripcion,activo,fecha)
+ VALUES
+ (@col,@bin,@desc,1,GETDATE())",
+                                cn, tx))
                             {
-                                // En lugar de operador ternario, usamos if/else:
-                                if (exColor.Length > 0)
-                                    cmd4.Parameters.AddWithValue("@col", exColor[0]);
+                                if (int.TryParse(ddlImgColor.SelectedValue, out var imgCid) && imgCid > 0)
+                                    cmd4.Parameters.AddWithValue("@col", imgCid);
                                 else
                                     cmd4.Parameters.AddWithValue("@col", DBNull.Value);
 
@@ -249,10 +270,11 @@ namespace PandaMay.Productos
 
                         tx.Commit();
                     }
-                    catch
+                    catch (Exception ex)
                     {
                         tx.Rollback();
-                        throw;
+                        MostrarError("Ocurrió un error: " + ex.Message);
+                        return;
                     }
                 }
             }
@@ -263,6 +285,12 @@ namespace PandaMay.Productos
         protected void btnRegresar_Click(object sender, EventArgs e)
         {
             Response.Redirect("Productos.aspx");
+        }
+
+        private void MostrarError(string msg)
+        {
+            lblError.Text = msg;
+            lblError.Visible = true;
         }
     }
 }
