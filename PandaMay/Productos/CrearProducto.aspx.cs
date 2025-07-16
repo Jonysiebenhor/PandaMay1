@@ -24,33 +24,33 @@ namespace PandaMay.Productos
             {
                 cn.Open();
 
-                // Subcategorías
+                // 1) Subcategorías
                 ddlSubcategoria.Items.Clear();
                 ddlSubcategoria.Items.Add(new ListItem("-- Subcategoría --", ""));
                 using (var cmd = new SqlCommand(
-                    "SELECT idsubcategoria,nombre FROM dbo.SUBCATEGORIAS WHERE activo=1", cn))
+                    "SELECT idsubcategoria, nombre FROM dbo.SUBCATEGORIAS WHERE activo=1", cn))
                 using (var dr = cmd.ExecuteReader())
                     while (dr.Read())
                         ddlSubcategoria.Items.Add(new ListItem(
                             dr["nombre"].ToString(),
                             dr["idsubcategoria"].ToString()));
 
-                // Tiendas
+                // 2) Tiendas
                 ddlTienda.Items.Clear();
                 ddlTienda.Items.Add(new ListItem("-- Tienda --", ""));
                 using (var cmd2 = new SqlCommand(
-                    "SELECT idtienda,nombre FROM dbo.TIENDAS WHERE activo=1", cn))
+                    "SELECT idtienda, nombre FROM dbo.TIENDAS WHERE activo=1", cn))
                 using (var dr2 = cmd2.ExecuteReader())
                     while (dr2.Read())
                         ddlTienda.Items.Add(new ListItem(
                             dr2["nombre"].ToString(),
                             dr2["idtienda"].ToString()));
 
-                // Unidades
+                // 3) Unidades
                 ddlUnidad.Items.Clear();
                 ddlUnidad.Items.Add(new ListItem("-- Unidad --", ""));
                 using (var cmd3 = new SqlCommand(
-                    "SELECT idunidaddemedida,nombre FROM dbo.UNIDADDEMEDIDAS WHERE activo=1", cn))
+                    "SELECT idunidaddemedida, nombre FROM dbo.UNIDADDEMEDIDAS WHERE activo=1", cn))
                 using (var dr3 = cmd3.ExecuteReader())
                     while (dr3.Read())
                         ddlUnidad.Items.Add(new ListItem(
@@ -58,11 +58,11 @@ namespace PandaMay.Productos
                             dr3["idunidaddemedida"].ToString()));
                 ddlUnidad.Items.Add(new ListItem("-- Agregar nueva unidad --", "0"));
 
-                // Marcas
+                // 4) Marcas
                 ddlMarca.Items.Clear();
                 ddlMarca.Items.Add(new ListItem("-- Marca --", ""));
                 using (var cmd4 = new SqlCommand(
-                    "SELECT idmarca,nombre FROM dbo.MARCAS WHERE activo=1", cn))
+                    "SELECT idmarca, nombre FROM dbo.MARCAS WHERE activo=1", cn))
                 using (var dr4 = cmd4.ExecuteReader())
                     while (dr4.Read())
                         ddlMarca.Items.Add(new ListItem(
@@ -70,11 +70,11 @@ namespace PandaMay.Productos
                             dr4["idmarca"].ToString()));
                 ddlMarca.Items.Add(new ListItem("-- Agregar nueva marca --", "0"));
 
-                // Colores para la imagen (sin filtrar por columna inexistente)
+                // 5) Colores (imagen)
                 ddlImgColor.Items.Clear();
                 ddlImgColor.Items.Add(new ListItem("-- Color imagen --", ""));
                 using (var cmd5 = new SqlCommand(
-                    "SELECT idcolor,nombre FROM dbo.COLORES", cn))
+                    "SELECT idcolor, nombre FROM dbo.COLORES", cn))
                 using (var dr5 = cmd5.ExecuteReader())
                     while (dr5.Read())
                         ddlImgColor.Items.Add(new ListItem(
@@ -84,9 +84,7 @@ namespace PandaMay.Productos
         }
 
         protected void ddlUnidad_SelectedIndexChanged(object sender, EventArgs e)
-        {
-            pnlAddUnidad.Visible = ddlUnidad.SelectedValue == "0";
-        }
+            => pnlAddUnidad.Visible = ddlUnidad.SelectedValue == "0";
 
         protected void btnGuardarUnidad_Click(object sender, EventArgs e)
         {
@@ -95,10 +93,10 @@ namespace PandaMay.Productos
 
             int idNew;
             using (var cn = new SqlConnection(_connString))
-            using (var cmd = new SqlCommand(
-                "INSERT INTO dbo.UNIDADDEMEDIDAS(nombre,activo,fecha) " +
-                "OUTPUT INSERTED.idunidaddemedida " +
-                "VALUES(@n,1,GETDATE())", cn))
+            using (var cmd = new SqlCommand(@"
+INSERT INTO dbo.UNIDADDEMEDIDAS(nombre, activo, fecha)
+ OUTPUT INSERTED.idunidaddemedida
+ VALUES(@n,1,CONVERT(INT,GETDATE()))", cn))
             {
                 cmd.Parameters.AddWithValue("@n", nueva);
                 cn.Open();
@@ -112,9 +110,7 @@ namespace PandaMay.Productos
         }
 
         protected void ddlMarca_SelectedIndexChanged(object sender, EventArgs e)
-        {
-            pnlAddMarca.Visible = ddlMarca.SelectedValue == "0";
-        }
+            => pnlAddMarca.Visible = ddlMarca.SelectedValue == "0";
 
         protected void btnGuardarMarca_Click(object sender, EventArgs e)
         {
@@ -123,10 +119,10 @@ namespace PandaMay.Productos
 
             int idNew;
             using (var cn = new SqlConnection(_connString))
-            using (var cmd = new SqlCommand(
-                "INSERT INTO dbo.MARCAS(nombre,activo,fecha) " +
-                "OUTPUT INSERTED.idmarca " +
-                "VALUES(@n,1,GETDATE())", cn))
+            using (var cmd = new SqlCommand(@"
+INSERT INTO dbo.MARCAS(nombre, activo, fecha)
+ OUTPUT INSERTED.idmarca
+ VALUES(@n,1,CONVERT(INT,GETDATE()))", cn))
             {
                 cmd.Parameters.AddWithValue("@n", nueva);
                 cn.Open();
@@ -144,11 +140,11 @@ namespace PandaMay.Productos
             if (!Page.IsValid) return;
             lblError.Visible = false;
 
-            // Lectura de campos
+            // 1) Campos principales
             int subcat = int.TryParse(ddlSubcategoria.SelectedValue, out var sc) ? sc : 0;
-            if (!int.TryParse(ddlUnidad.SelectedValue, out int unidad) || unidad == 0)
+            if (!int.TryParse(ddlUnidad.SelectedValue, out var unidad) || unidad == 0)
             { MostrarError("Seleccione o cree una unidad válida."); return; }
-            if (!int.TryParse(ddlMarca.SelectedValue, out int marca) || marca == 0)
+            if (!int.TryParse(ddlMarca.SelectedValue, out var marca) || marca == 0)
             { MostrarError("Seleccione o cree una marca válida."); return; }
 
             var nombre = txtNombre.Text.Trim();
@@ -158,17 +154,16 @@ namespace PandaMay.Productos
             var tipoProd = txtTipo.Text.Trim();
             var descuento = float.TryParse(txtDescuento.Text.Trim(), out var d) ? d : 0f;
 
-            // Dinámicos
+            // 2) Arrays dinámicos
             var tarifas = Request.Form.GetValues("tarifa") ?? new string[0];
             var aplicaEn = Request.Form.GetValues("aplicaEn") ?? new string[0];
             var cantMin = Request.Form.GetValues("cantMin") ?? new string[0];
             var precioVal = Request.Form.GetValues("precioVal") ?? new string[0];
-
             var exColor = Request.Form.GetValues("exColor") ?? new string[0];
             var exMedida = Request.Form.GetValues("exMedida") ?? new string[0];
             var exCant = Request.Form.GetValues("exCant") ?? new string[0];
 
-            // Imagen
+            // 3) Imagen
             byte[] imgBytes = null;
             if (fuImagen.HasFile)
             {
@@ -184,9 +179,10 @@ namespace PandaMay.Productos
                 cn.Open();
                 using (var tx = cn.BeginTransaction())
                 {
+                    bool committed = false;
                     try
                     {
-                        // 1) PRODUCTOS
+                        // INSERT PRODUCTOS
                         int newId;
                         using (var cmd = new SqlCommand(@"
 INSERT INTO dbo.PRODUCTOS
@@ -194,8 +190,8 @@ INSERT INTO dbo.PRODUCTOS
   referencia,codigodebarras,activo,tipodeproducto,descuento)
  OUTPUT INSERTED.idproducto
  VALUES
- ( @sub,@uni,@mar,@nom,GETDATE(),@ref,@cb,@act,@tip,@des )",
-                            cn, tx))
+ (@sub,@uni,@mar,@nom,CONVERT(INT,GETDATE()),
+  @ref,@cb,@act,@tip,@des)", cn, tx))
                         {
                             cmd.Parameters.AddWithValue("@sub", sc > 0 ? (object)sc : DBNull.Value);
                             cmd.Parameters.AddWithValue("@uni", unidad);
@@ -209,16 +205,16 @@ INSERT INTO dbo.PRODUCTOS
                             newId = (int)cmd.ExecuteScalar();
                         }
 
-                        // 2) PRECIOS
-                        for (int i = 0; i < tarifas.Length; i++)
-                        {
-                            using (var cmd2 = new SqlCommand(@"
+                        // INSERT PRECIOS
+                        using (var cmd2 = new SqlCommand(@"
 INSERT INTO dbo.PRECIOS
  (idproducto,nombre,descripcion,precio,cantidad,activo,fecha)
  VALUES
- (@id,@nom,@desc,@pre,@cant,1,GETDATE())",
-                                cn, tx))
+ (@id,@nom,@desc,@pre,@cant,1,CONVERT(INT,GETDATE()))", cn, tx))
+                        {
+                            for (int i = 0; i < tarifas.Length; i++)
                             {
+                                cmd2.Parameters.Clear();
                                 cmd2.Parameters.AddWithValue("@id", newId);
                                 cmd2.Parameters.AddWithValue("@nom", tarifas[i]);
                                 cmd2.Parameters.AddWithValue("@desc", aplicaEn[i]);
@@ -228,37 +224,46 @@ INSERT INTO dbo.PRECIOS
                             }
                         }
 
-                        // 3) EXISTENCIAS
+                        // INSERT EXISTENCIAS
                         for (int i = 0; i < exColor.Length; i++)
                         {
+                            // validar exMedida es ID válido
+                            if (!int.TryParse(exMedida[i], out var medId) || medId == 0)
+                            {
+                                MostrarError($"Seleccione una unidad válida en fila {i + 1}.");
+                                tx.Rollback();
+                                return;
+                            }
+
                             using (var cmd3 = new SqlCommand(@"
 INSERT INTO dbo.EXISTENCIAS
  (idtienda,idproducto,idcolor,idmedida,cantidad,fechaingreso)
  VALUES
- (@tid,@id,@col,@med,@can,GETDATE())",
-                                cn, tx))
+ (@tid,@id,@col,@med,@can,CONVERT(INT,GETDATE()))", cn, tx))
                             {
                                 cmd3.Parameters.AddWithValue("@tid", int.Parse(ddlTienda.SelectedValue));
                                 cmd3.Parameters.AddWithValue("@id", newId);
-                                cmd3.Parameters.AddWithValue("@col", exColor[i]);
-                                cmd3.Parameters.AddWithValue("@med", exMedida[i]);
+                                cmd3.Parameters.AddWithValue("@col",
+                                    int.TryParse(exColor[i], out var c2) && c2 > 0
+                                      ? (object)c2
+                                      : DBNull.Value);
+                                cmd3.Parameters.AddWithValue("@med", medId);
                                 cmd3.Parameters.AddWithValue("@can", int.Parse(exCant[i]));
                                 cmd3.ExecuteNonQuery();
                             }
                         }
 
-                        // 4) IMAGEN
+                        // INSERT IMÁGENES
                         if (imgBytes != null)
                         {
                             using (var cmd4 = new SqlCommand(@"
 INSERT INTO dbo.IMAGENES
  (idcolor,foto,descripcion,activo,fecha)
  VALUES
- (@col,@bin,@desc,1,GETDATE())",
-                                cn, tx))
+ (@col,@bin,@desc,1,CONVERT(INT,GETDATE()))", cn, tx))
                             {
-                                if (int.TryParse(ddlImgColor.SelectedValue, out var imgCid) && imgCid > 0)
-                                    cmd4.Parameters.AddWithValue("@col", imgCid);
+                                if (int.TryParse(ddlImgColor.SelectedValue, out var ic) && ic > 0)
+                                    cmd4.Parameters.AddWithValue("@col", ic);
                                 else
                                     cmd4.Parameters.AddWithValue("@col", DBNull.Value);
 
@@ -269,23 +274,25 @@ INSERT INTO dbo.IMAGENES
                         }
 
                         tx.Commit();
+                        committed = true;
+                        Response.Redirect("Productos.aspx");
                     }
                     catch (Exception ex)
                     {
-                        tx.Rollback();
+                        // Sólo rollback si no se hizo commit
+                        if (!committed && tx.Connection != null)
+                        {
+                            try { tx.Rollback(); }
+                            catch { /* ya estaba terminada */ }
+                        }
                         MostrarError("Ocurrió un error: " + ex.Message);
-                        return;
                     }
                 }
             }
-
-            Response.Redirect("Productos.aspx");
         }
 
         protected void btnRegresar_Click(object sender, EventArgs e)
-        {
-            Response.Redirect("Productos.aspx");
-        }
+            => Response.Redirect("Productos.aspx");
 
         private void MostrarError(string msg)
         {
@@ -294,3 +301,4 @@ INSERT INTO dbo.IMAGENES
         }
     }
 }
+
