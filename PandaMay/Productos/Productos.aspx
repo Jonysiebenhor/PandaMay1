@@ -194,6 +194,17 @@
                   Text='<%# Eval("foto") %>' />
               </ItemTemplate>
             </asp:TemplateField>
+               <asp:TemplateField HeaderText="Imagen">
+   <ItemTemplate>
+     <asp:Image ID="imgFoto" runat="server"
+       Width="60px" Height="60px"
+       ImageUrl='<%#
+         Eval("foto") == DBNull.Value
+           ? ResolveUrl("~/images/no-image.png")
+           : "data:image/png;base64," + Convert.ToBase64String((byte[])Eval("foto"))
+       %>' />
+   </ItemTemplate>
+ </asp:TemplateField>
           </Columns>
         </asp:GridView>
       </div>

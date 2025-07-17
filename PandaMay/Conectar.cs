@@ -113,41 +113,43 @@ namespace PandaMay
         public DataTable productos()
         {
             const string query = @"
-      SELECT 
-        a.idproducto,
-        a.codigodebarras,
-        a.referencia,
-        a.nombre,
-        (
-          SELECT b.precio 
-          FROM precios b 
-          WHERE b.nombre = 'unidad' 
-            AND b.idproducto = a.idproducto
-        ) AS unidad,
-        (
-          SELECT b.precio 
-          FROM precios b 
-          WHERE b.nombre = '3 o más' 
-            AND b.idproducto = a.idproducto
-        ) AS tresomas,
-        (
-          SELECT b.precio 
-          FROM precios b 
-          WHERE b.nombre = 'docena' 
-            AND b.idproducto = a.idproducto
-        ) AS docena,
-        (
-          SELECT b.precio 
-          FROM precios b 
-          WHERE b.nombre = 'fardo' 
-            AND b.idproducto = a.idproducto
-        ) AS fardo,
-        c.foto
-      FROM productos a
-      LEFT JOIN existencias j ON a.idproducto = j.idproducto
-      LEFT JOIN colores    k ON j.idcolor    = k.idcolor
-      LEFT JOIN imagenes   c ON k.idcolor    = c.idcolor;
-    ";
+SELECT 
+  a.idproducto,
+  a.codigodebarras,
+  a.referencia,
+  a.nombre,
+  (
+    SELECT b.precio 
+    FROM precios b 
+    WHERE b.nombre = 'unidad' 
+      AND b.idproducto = a.idproducto
+  ) AS unidad,
+  (
+    SELECT b.precio 
+    FROM precios b 
+    WHERE b.nombre = '3 o más' 
+      AND b.idproducto = a.idproducto
+  ) AS tresomas,
+  (
+    SELECT b.precio 
+    FROM precios b 
+    WHERE b.nombre = 'docena' 
+      AND b.idproducto = a.idproducto
+  ) AS docena,
+  (
+    SELECT b.precio 
+    FROM precios b 
+    WHERE b.nombre = 'fardo' 
+      AND b.idproducto = a.idproducto
+  ) AS fardo,
+  -- Aquí traemos la foto directamente por idproducto
+  i.foto
+FROM productos a
+LEFT JOIN imagenes i
+  ON i.idproducto = a.idproducto
+  AND i.activo = 1
+ORDER BY a.nombre;
+";
 
             using (var cmd = new SqlCommand(query, conexion))
             using (var da = new SqlDataAdapter(cmd))
@@ -157,6 +159,7 @@ namespace PandaMay
                 return dt;
             }
         }
+
         public DataTable tiendasempleados(String usuario)
         {
             String query = "select a.nombre from tiendas a left join empleadostiendas b on a.idtienda=b.idtienda left join empleados c on b.idempleado=c.idempleado left join usuarios d on c.idusuario=d.idusuario where d.usuario='" + usuario + "' order by a.nombre asc";

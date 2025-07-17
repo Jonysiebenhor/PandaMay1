@@ -1,5 +1,6 @@
 ﻿using System;
-
+using System.Data;
+using System.Data.SqlClient;
 using System.Web.UI;
 using System.Web.UI.WebControls;
 using PandaMay;  // Ajusta al namespace donde esté tu clase Conectar
@@ -18,33 +19,31 @@ namespace PandaMay.Productos
 
             if (!IsPostBack)
             {
-                // 2) Panel de tabla siempre visible y cargamos datos
                 pnlTabla.Visible = true;
                 CargarProductos();
             }
         }
 
         // Método auxiliar para bindear el grid principal
-        private void CargarProductos()
+        private void CargarProductos(string filtro = "")
         {
-
+            // Se asume que conectado.productos(filtro) ya trae la columna foto
             conectado.conectar();
-            GridView1.DataSource = conectado.productos();
+            if (String.IsNullOrEmpty(filtro))
+                GridView1.DataSource = conectado.productos();
+            else
+                GridView1.DataSource = conectado.buscarproducto(filtro);
             GridView1.DataBind();
             conectado.desconectar();
-
-
         }
 
-        // Regresa al menú principal
-        protected void btnRegresar_Click(object sender, EventArgs e)
+        // Búsqueda en vivo
+        protected void txtBuscar_TextChanged(object sender, EventArgs e)
         {
-            Response.Redirect("~/Default.aspx");
+            CargarProductos(txtBuscar.Text.Trim());
         }
 
-        /// <summary>
-        /// Redirige a CrearProducto.aspx en la misma pestaña.
-        /// </summary>
+        // Redirigir a CrearProducto.aspx
         protected void btnCrearProducto_Click(object sender, EventArgs e)
         {
             Response.Redirect("CrearProducto.aspx");
@@ -53,14 +52,9 @@ namespace PandaMay.Productos
         // Al seleccionar un producto, cargamos los grids de detalle
         protected void Select1(object sender, GridViewSelectEventArgs e)
         {
-            int idProducto = Convert.ToInt32(
-                GridView1.DataKeys[e.NewSelectedIndex].Value);
+            int idProducto = Convert.ToInt32(GridView1.DataKeys[e.NewSelectedIndex].Value);
 
-           
-           
             pnlDetalles.Visible = true;
-
-           
             conectado.conectar();
 
             gvCombosProductos.DataSource = conectado.GetByProducto("COMBOSPRODUCTOS", idProducto);
@@ -72,7 +66,6 @@ namespace PandaMay.Productos
             gvAtributos.DataSource = conectado.GetByProducto("ATRIBUTOS", idProducto);
             gvExistencias.DataSource = conectado.GetByProducto("EXISTENCIAS", idProducto);
 
-           
             gvCombosProductos.DataBind();
             gvDetallesCompras.DataBind();
             gvDetallesTraslados.DataBind();
@@ -84,28 +77,5 @@ namespace PandaMay.Productos
 
             conectado.desconectar();
         }
-
-        // Búsqueda en vivo
-        protected void txtBuscar_TextChanged(object sender, EventArgs e)
-        {
-
-            string criterio = txtBuscar.Text.Trim();
-            conectado.conectar();
-
-            if (String.IsNullOrEmpty(criterio))
-                GridView1.DataSource = conectado.productos();
-            else
-                GridView1.DataSource = conectado.buscarproducto(criterio);
-
-            GridView1.DataBind();
-            conectado.desconectar();
-       
-        
-        
-        
-        
-        
-        }
-   
     }
 }
