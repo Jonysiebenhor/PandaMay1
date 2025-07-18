@@ -22,12 +22,11 @@
     <!-- Cabecera: regresar, crear y buscador -->
     <div style="display:flex; justify-content:center; align-items:center; gap:10px; margin:30px 0;">
       <asp:Button
-  ID="btnRegresar"
-  runat="server"
-  CssClass="orangebutton"
-  Text="Regresar"
-  OnClientClick="window.history.back(); return false;" />
-
+        ID="btnRegresar"
+        runat="server"
+        CssClass="orangebutton"
+        Text="Regresar"
+        OnClientClick="window.history.back(); return false;" />
 
       <asp:Button
         ID="btnCrearProducto"
@@ -152,59 +151,63 @@
                   Text='<%# Eval("nombre") %>' />
               </ItemTemplate>
             </asp:TemplateField>
+
             <asp:TemplateField HeaderText="Precio (U)">
               <ItemTemplate>
                 <asp:Label ID="lblPrecioU" runat="server"
                   Text='<%# Eval("unidad") %>' />
               </ItemTemplate>
             </asp:TemplateField>
+
             <asp:TemplateField HeaderText="Precio (3)">
               <ItemTemplate>
                 <asp:Label ID="lblPrecio3" runat="server"
                   Text='<%# Eval("tresomas") %>' />
               </ItemTemplate>
             </asp:TemplateField>
+
             <asp:TemplateField HeaderText="Precio (Doc)">
               <ItemTemplate>
                 <asp:Label ID="lblDocena" runat="server"
                   Text='<%# Eval("docena") %>' />
               </ItemTemplate>
             </asp:TemplateField>
+
             <asp:TemplateField HeaderText="Precio (F)">
               <ItemTemplate>
                 <asp:Label ID="lblFardo" runat="server"
                   Text='<%# Eval("fardo") %>' />
               </ItemTemplate>
             </asp:TemplateField>
+
             <asp:TemplateField HeaderText="Código de barras">
               <ItemTemplate>
                 <asp:Label ID="lblCodigoBarras" runat="server"
                   Text='<%# Eval("codigodebarras") %>' />
               </ItemTemplate>
             </asp:TemplateField>
+
             <asp:TemplateField HeaderText="Referencia">
               <ItemTemplate>
                 <asp:Label ID="lblReferencia" runat="server"
                   Text='<%# Eval("referencia") %>' />
               </ItemTemplate>
             </asp:TemplateField>
+
+            <%-- Columna única de Imagen --%>
             <asp:TemplateField HeaderText="Imagen">
               <ItemTemplate>
-                <asp:Label ID="lblImagen" runat="server"
-                  Text='<%# Eval("foto") %>' />
+                <asp:Image ID="imgFoto" runat="server"
+                  Width="60px" Height="60px"
+                ImageUrl='<%#
+    Eval("foto") == DBNull.Value
+      ? ResolveUrl("~/images/no-image.png")
+      : "data:image/webp;base64," + Convert.ToBase64String((byte[])Eval("foto"))
+%>' />
+
               </ItemTemplate>
             </asp:TemplateField>
-               <asp:TemplateField HeaderText="Imagen">
-   <ItemTemplate>
-     <asp:Image ID="imgFoto" runat="server"
-       Width="60px" Height="60px"
-       ImageUrl='<%#
-         Eval("foto") == DBNull.Value
-           ? ResolveUrl("~/images/no-image.png")
-           : "data:image/png;base64," + Convert.ToBase64String((byte[])Eval("foto"))
-       %>' />
-   </ItemTemplate>
- </asp:TemplateField>
+
           </Columns>
         </asp:GridView>
       </div>

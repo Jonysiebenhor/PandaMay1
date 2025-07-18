@@ -1,6 +1,5 @@
 ﻿using System;
 using System.Data;
-using System.Data.SqlClient;
 using System.Web.UI;
 using System.Web.UI.WebControls;
 using PandaMay;  // Ajusta al namespace donde esté tu clase Conectar
@@ -27,7 +26,6 @@ namespace PandaMay.Productos
         // Método auxiliar para bindear el grid principal
         private void CargarProductos(string filtro = "")
         {
-            // Se asume que conectado.productos(filtro) ya trae la columna foto
             conectado.conectar();
             if (String.IsNullOrEmpty(filtro))
                 GridView1.DataSource = conectado.productos();

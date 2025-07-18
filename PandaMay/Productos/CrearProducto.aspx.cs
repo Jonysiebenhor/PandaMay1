@@ -298,24 +298,35 @@ INSERT INTO dbo.EXISTENCIAS
                             }
                         }
 
+                        
                         // 4) IMÁGENES
                         if (imgBytes != null)
                         {
                             using (var cmd4 = new SqlCommand(@"
 INSERT INTO dbo.IMAGENES
- (idcolor,foto,descripcion,activo)
+ (idproducto,idcolor,foto,descripcion,activo)
  VALUES
- (@col,@bin,@desc,1)", cn, tx))
+ (@pid,      @col,    @bin,  @desc,      1)", cn, tx))
                             {
+                                // 1) Vincular la imagen al producto recién creado
+                                cmd4.Parameters.AddWithValue("@pid", newId);
+
+                                // 2) Color de imagen
                                 if (int.TryParse(ddlImgColor.SelectedValue, out var ic) && ic > 0)
                                     cmd4.Parameters.AddWithValue("@col", ic);
                                 else
                                     cmd4.Parameters.AddWithValue("@col", DBNull.Value);
+
+                                // 3) El contenido binario de la imagen
                                 cmd4.Parameters.AddWithValue("@bin", imgBytes);
+
+                                // 4) Descripción de la imagen
                                 cmd4.Parameters.AddWithValue("@desc", txtImgDesc.Text.Trim());
+
                                 cmd4.ExecuteNonQuery();
                             }
                         }
+
 
                         tx.Commit();
                         committed = true;

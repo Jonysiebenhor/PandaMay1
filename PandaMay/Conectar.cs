@@ -170,16 +170,57 @@ ORDER BY a.nombre;
             returnVal.Fill(dt);
             return dt;
         }
-        public DataTable buscarproducto(String buscar)
+        public DataTable buscarproducto(string buscar)
         {
-            String query = "select a.codigodebarras, a.referencia, a.nombre,(select b.precio from precios b left join productos c on b.idproducto=c.idproducto where b.nombre='unidad' and a.idproducto=c.idproducto) as unidad,(select b.precio from precios b left join productos c on b.idproducto=c.idproducto where b.nombre='3 o más' and a.idproducto=c.idproducto) as tresomas,(select b.precio from precios b left join productos c on b.idproducto=c.idproducto where b.nombre='docena' and a.idproducto=c.idproducto) as docena, (select b.precio from precios b left join productos c on b.idproducto=c.idproducto where b.nombre='fardo' and a.idproducto=c.idproducto) as fardo, c.foto from productos a  left join existencias j on a.idproducto = j.idproducto left join colores k on j.idcolor=k.idcolor left join imagenes c on k.idcolor = c.idcolor where a.nombre like '%" + buscar + "%' or a.referencia like '%" + buscar + "%' or a.codigodebarras like '%" + buscar + "%'";
+            const string query = @"
+SELECT 
+  a.idproducto,
+  a.codigodebarras,
+  a.referencia,
+  a.nombre,
+  (SELECT b.precio 
+     FROM precios b 
+    WHERE b.nombre = 'unidad' 
+      AND b.idproducto = a.idproducto
+  ) AS unidad,
+  (SELECT b.precio 
+     FROM precios b 
+    WHERE b.nombre = '3 o más' 
+      AND b.idproducto = a.idproducto
+  ) AS tresomas,
+  (SELECT b.precio 
+     FROM precios b 
+    WHERE b.nombre = 'docena' 
+      AND b.idproducto = a.idproducto
+  ) AS docena,
+  (SELECT b.precio 
+     FROM precios b 
+    WHERE b.nombre = 'fardo' 
+      AND b.idproducto = a.idproducto
+  ) AS fardo,
+  i.foto
+FROM productos a
+LEFT JOIN imagenes i
+  ON i.idproducto = a.idproducto
+  AND i.activo = 1
+WHERE a.nombre        LIKE @busc
+   OR a.referencia     LIKE @busc
+   OR a.codigodebarras LIKE @busc
+ORDER BY a.nombre;
+";
 
-            SqlCommand cmd = new SqlCommand(query, conexion);
-            SqlDataAdapter returnVal = new SqlDataAdapter(query, conexion);
-            DataTable dt = new DataTable();
-            returnVal.Fill(dt);
-            return dt;
+            using (var cmd = new SqlCommand(query, conexion))
+            {
+                cmd.Parameters.AddWithValue("@busc", "%" + buscar + "%");
+                using (var da = new SqlDataAdapter(cmd))
+                {
+                    var dt = new DataTable();
+                    da.Fill(dt);
+                    return dt;
+                }
+            }
         }
+
         public DataTable buscarproducto1(String nombre)
         {
             String query = "select a.nombre, b.precio from productos a left join precios b on a.idproducto=b.idproducto where a.nombre= '" + nombre + "'";

@@ -20,12 +20,12 @@
     .section          { margin-bottom:2rem; }
     .section legend   { font-size:1.1rem; font-weight:bold; }
     .add-btn          { background:#444; color:#fff; border-radius:50%; 
-                         width:30px; height:30px; line-height:30px; text-align:center;
-                         cursor:pointer; user-select:none; }
+                       width:30px; height:30px; line-height:30px; text-align:center;
+                       cursor:pointer; user-select:none; }
     .bluebutton       { background:#3498db; color:#fff; padding:.5rem 1rem;
-                         border:none; border-radius:4px; margin-bottom:1rem; }
+                       border:none; border-radius:4px; margin-bottom:1rem; }
     .greenbutton      { background:#2ecc71; color:#fff; padding:.5rem 1rem;
-                         border:none; border-radius:4px; }
+                       border:none; border-radius:4px; }
     .form-control     { padding:.4rem; border:1px solid #ccc; border-radius:4px; }
   </style>
 </asp:Content>
@@ -48,14 +48,12 @@
   <fieldset class="section">
     <legend>Datos de Producto</legend>
     <div class="form-grid">
-
       <!-- Subcategoría -->
       <div class="field-group">
         <label>Subcategoría:</label>
         <asp:DropDownList ID="ddlSubcategoria" runat="server"
             CssClass="form-control" />
       </div>
-
       <!-- Tienda (requerido) -->
       <div class="field-group">
         <label>Tienda:</label>
@@ -65,7 +63,6 @@
             InitialValue="" ErrorMessage="* Requerido"
             runat="server" Display="Dynamic" CssClass="validator" />
       </div>
-
       <!-- Unidad + “Agregar nueva” -->
       <div class="field-group">
         <label>Unidad de medida:</label>
@@ -87,7 +84,6 @@
               OnClick="btnGuardarUnidad_Click" />
         </asp:Panel>
       </div>
-
       <!-- Marca + “Agregar nueva” -->
       <div class="field-group">
         <label>Marca:</label>
@@ -109,7 +105,6 @@
               OnClick="btnGuardarMarca_Click" />
         </asp:Panel>
       </div>
-
       <!-- Nombre -->
       <div class="field-group">
         <label>Nombre:</label>
@@ -119,14 +114,12 @@
             ErrorMessage="* Requerido"
             runat="server" Display="Dynamic" CssClass="validator" />
       </div>
-
       <!-- Referencia -->
       <div class="field-group">
         <label>Referencia:</label>
         <asp:TextBox ID="txtReferencia" runat="server"
             CssClass="form-control" />
       </div>
-
       <!-- Código de barras -->
       <div class="field-group">
         <label>Código de barras:</label>
@@ -140,20 +133,17 @@
             ErrorMessage="* Sólo dígitos"
             runat="server" Display="Dynamic" CssClass="validator" />
       </div>
-
       <!-- Activo -->
       <div class="field-group">
         <label>Activo:</label>
         <asp:CheckBox ID="chkActivo" runat="server" Checked="true" />
       </div>
-
       <!-- Tipo de producto -->
       <div class="field-group">
         <label>Tipo de producto:</label>
         <asp:TextBox ID="txtTipo" runat="server"
             CssClass="form-control" />
       </div>
-
       <!-- Descuento (%) -->
       <div class="field-group">
         <label>Descuento (%):</label>
@@ -216,7 +206,7 @@
         <label>Tarifa:</label>
         <select name="tarifa" class="form-control">
           <option value="unidad">Precio unidad</option>
-          <option value="3omas">Precio 3 o más</option>
+          <option value="3 o más">Precio 3 o más</option>  <!-- ← aquí -->
           <option value="docena">Precio docena</option>
           <option value="fardo">Precio fardo</option>
         </select>
