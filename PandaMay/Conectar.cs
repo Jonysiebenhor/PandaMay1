@@ -118,36 +118,27 @@ SELECT
   a.codigodebarras,
   a.referencia,
   a.nombre,
-  (
-    SELECT b.precio 
-    FROM precios b 
-    WHERE b.nombre = 'unidad' 
-      AND b.idproducto = a.idproducto
+  (SELECT b.precio FROM precios b 
+     WHERE b.nombre = 'unidad'   AND b.idproducto = a.idproducto
   ) AS unidad,
-  (
-    SELECT b.precio 
-    FROM precios b 
-    WHERE b.nombre = '3 o más' 
-      AND b.idproducto = a.idproducto
+  (SELECT b.precio FROM precios b 
+     WHERE b.nombre = '3 o más'  AND b.idproducto = a.idproducto
   ) AS tresomas,
-  (
-    SELECT b.precio 
-    FROM precios b 
-    WHERE b.nombre = 'docena' 
-      AND b.idproducto = a.idproducto
+  (SELECT b.precio FROM precios b 
+     WHERE b.nombre = 'docena'    AND b.idproducto = a.idproducto
   ) AS docena,
-  (
-    SELECT b.precio 
-    FROM precios b 
-    WHERE b.nombre = 'fardo' 
-      AND b.idproducto = a.idproducto
+  (SELECT b.precio FROM precios b 
+     WHERE b.nombre = 'fardo'     AND b.idproducto = a.idproducto
   ) AS fardo,
-  -- Aquí traemos la foto directamente por idproducto
-  i.foto
+  -- Traemos la foto más reciente (activo=1) de la tabla Imagenes
+  img.foto
 FROM productos a
-LEFT JOIN imagenes i
-  ON i.idproducto = a.idproducto
-  AND i.activo = 1
+OUTER APPLY (
+  SELECT TOP 1 i.foto
+  FROM imagenes i
+  WHERE i.idproducto = a.idproducto AND i.activo = 1
+  ORDER BY i.fecha DESC
+) img
 ORDER BY a.nombre;
 ";
 
@@ -159,6 +150,10 @@ ORDER BY a.nombre;
                 return dt;
             }
         }
+
+
+
+
 
         public DataTable tiendasempleados(String usuario)
         {
@@ -178,31 +173,26 @@ SELECT
   a.codigodebarras,
   a.referencia,
   a.nombre,
-  (SELECT b.precio 
-     FROM precios b 
-    WHERE b.nombre = 'unidad' 
-      AND b.idproducto = a.idproducto
+  (SELECT b.precio FROM precios b 
+     WHERE b.nombre = 'unidad'   AND b.idproducto = a.idproducto
   ) AS unidad,
-  (SELECT b.precio 
-     FROM precios b 
-    WHERE b.nombre = '3 o más' 
-      AND b.idproducto = a.idproducto
+  (SELECT b.precio FROM precios b 
+     WHERE b.nombre = '3 o más'  AND b.idproducto = a.idproducto
   ) AS tresomas,
-  (SELECT b.precio 
-     FROM precios b 
-    WHERE b.nombre = 'docena' 
-      AND b.idproducto = a.idproducto
+  (SELECT b.precio FROM precios b 
+     WHERE b.nombre = 'docena'    AND b.idproducto = a.idproducto
   ) AS docena,
-  (SELECT b.precio 
-     FROM precios b 
-    WHERE b.nombre = 'fardo' 
-      AND b.idproducto = a.idproducto
+  (SELECT b.precio FROM precios b 
+     WHERE b.nombre = 'fardo'     AND b.idproducto = a.idproducto
   ) AS fardo,
-  i.foto
+  img.foto
 FROM productos a
-LEFT JOIN imagenes i
-  ON i.idproducto = a.idproducto
-  AND i.activo = 1
+OUTER APPLY (
+  SELECT TOP 1 i.foto
+  FROM imagenes i
+  WHERE i.idproducto = a.idproducto AND i.activo = 1
+  ORDER BY i.fecha DESC
+) img
 WHERE a.nombre        LIKE @busc
    OR a.referencia     LIKE @busc
    OR a.codigodebarras LIKE @busc
@@ -211,7 +201,7 @@ ORDER BY a.nombre;
 
             using (var cmd = new SqlCommand(query, conexion))
             {
-                cmd.Parameters.AddWithValue("@busc", "%" + buscar + "%");
+                cmd.Parameters.AddWithValue("@busc", $"%{buscar}%");
                 using (var da = new SqlDataAdapter(cmd))
                 {
                     var dt = new DataTable();
@@ -220,6 +210,8 @@ ORDER BY a.nombre;
                 }
             }
         }
+
+
 
         public DataTable buscarproducto1(String nombre)
         {

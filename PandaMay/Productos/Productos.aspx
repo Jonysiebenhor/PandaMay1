@@ -195,18 +195,15 @@
             </asp:TemplateField>
 
             <%-- Columna única de Imagen --%>
-            <asp:TemplateField HeaderText="Imagen">
-              <ItemTemplate>
-                <asp:Image ID="imgFoto" runat="server"
-                  Width="60px" Height="60px"
-                ImageUrl='<%#
-    Eval("foto") == DBNull.Value
-      ? ResolveUrl("~/images/no-image.png")
-      : "data:image/webp;base64," + Convert.ToBase64String((byte[])Eval("foto"))
-%>' />
+           <asp:TemplateField HeaderText="Imagen">
+  <ItemTemplate>
+    <asp:Image ID="imgFoto" runat="server"
+               Width="60px" Height="60px"
+               ImageUrl='<%# GetFotoUrl(Eval("foto")) %>' />
+  </ItemTemplate>
+</asp:TemplateField>
 
-              </ItemTemplate>
-            </asp:TemplateField>
+
 
           </Columns>
         </asp:GridView>

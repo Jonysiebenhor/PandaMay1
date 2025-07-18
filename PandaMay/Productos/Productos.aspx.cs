@@ -55,14 +55,14 @@ namespace PandaMay.Productos
             pnlDetalles.Visible = true;
             conectado.conectar();
 
-            gvCombosProductos.DataSource = conectado.GetByProducto("COMBOSPRODUCTOS", idProducto);
-            gvDetallesCompras.DataSource = conectado.GetByProducto("DETALLESCOMPRAS", idProducto);
-            gvDetallesTraslados.DataSource = conectado.GetByProducto("DETALLESTRASLADOS", idProducto);
-            gvDetallesVentas.DataSource = conectado.GetByProducto("DETALLESVENTAS", idProducto);
-            gvPrecios.DataSource = conectado.GetByProducto("PRECIOS", idProducto);
-            gvPreciosCompras.DataSource = conectado.GetByProducto("PRECIOSCOMPRAS", idProducto);
-            gvAtributos.DataSource = conectado.GetByProducto("ATRIBUTOS", idProducto);
-            gvExistencias.DataSource = conectado.GetByProducto("EXISTENCIAS", idProducto);
+            gvCombosProductos.DataSource      = conectado.GetByProducto("COMBOSPRODUCTOS",   idProducto);
+            gvDetallesCompras.DataSource      = conectado.GetByProducto("DETALLESCOMPRAS",  idProducto);
+            gvDetallesTraslados.DataSource    = conectado.GetByProducto("DETALLESTRASLADOS",idProducto);
+            gvDetallesVentas.DataSource       = conectado.GetByProducto("DETALLESVENTAS",   idProducto);
+            gvPrecios.DataSource              = conectado.GetByProducto("PRECIOS",          idProducto);
+            gvPreciosCompras.DataSource       = conectado.GetByProducto("PRECIOSCOMPRAS",   idProducto);
+            gvAtributos.DataSource            = conectado.GetByProducto("ATRIBUTOS",        idProducto);
+            gvExistencias.DataSource          = conectado.GetByProducto("EXISTENCIAS",      idProducto);
 
             gvCombosProductos.DataBind();
             gvDetallesCompras.DataBind();
@@ -75,5 +75,20 @@ namespace PandaMay.Productos
 
             conectado.desconectar();
         }
+
+        protected string GetFotoUrl(object foto)
+        {
+            if (foto == DBNull.Value)
+                return ResolveUrl("~/images/no-image.png");
+
+            // si llega un byte[] lo codificamos a base64
+            if (foto is byte[] bytes)
+                return "data:image/png;base64," + Convert.ToBase64String(bytes);
+
+            // si llega string, lo tomamos como ruta
+            return ResolveUrl(foto.ToString());
+        }
     }
+
+
 }
