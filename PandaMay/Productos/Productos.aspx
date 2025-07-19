@@ -194,14 +194,17 @@
               </ItemTemplate>
             </asp:TemplateField>
 
+
+
             <%-- Columna única de Imagen --%>
-           <asp:TemplateField HeaderText="Imagen">
+          <asp:TemplateField HeaderText="Imagen">
   <ItemTemplate>
     <asp:Image ID="imgFoto" runat="server"
-               Width="60px" Height="60px"
-               ImageUrl='<%# GetFotoUrl(Eval("foto")) %>' />
+      Width="60px" Height="60px"
+      ImageUrl='<%# ResolveUrl("~/Productos/Productos.aspx?imgid=" + Eval("idproducto")) %>' />
   </ItemTemplate>
 </asp:TemplateField>
+
 
 
 

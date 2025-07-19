@@ -1,8 +1,9 @@
-﻿using System;
+﻿using PandaMay;  // Ajusta al namespace donde esté tu clase Conectar
+using System;
 using System.Data;
+using System.Data.SqlClient;
 using System.Web.UI;
 using System.Web.UI.WebControls;
-using PandaMay;  // Ajusta al namespace donde esté tu clase Conectar
 
 namespace PandaMay.Productos
 {
@@ -12,7 +13,45 @@ namespace PandaMay.Productos
 
         protected void Page_Load(object sender, EventArgs e)
         {
-            // 1) Validar sesión
+            // ——— 1) Servicio de imagen inline ———
+            string imgid = Request.QueryString["imgid"];
+            if (!string.IsNullOrEmpty(imgid) && int.TryParse(imgid, out int idProd))
+            {
+                byte[] foto = null;
+                // Usa aquí tu misma cadena de conexión de Conectar.cs
+                string connStr = "workstation id=PandaMay.mssql.somee.com;packet size=4096;user id=Jonysiebenhor_SQLLogin_1;pwd=9btgzhlyqy;data source=PandaMay.mssql.somee.com;persist security info=False;initial catalog=PandaMay;TrustServerCertificate=True";
+
+                using (var cn = new SqlConnection(connStr))
+                using (var cmd = new SqlCommand(@"
+            SELECT TOP 1 i.foto
+              FROM Imagenes i
+             WHERE i.idproducto = @id
+               AND i.activo = 1
+          ORDER BY i.fecha DESC", cn))
+                {
+                    cmd.Parameters.AddWithValue("@id", idProd);
+                    cn.Open();
+                    foto = cmd.ExecuteScalar() as byte[];
+                }
+
+                if (foto != null && foto.Length > 0)
+                {
+                    Response.Clear();
+                    Response.ContentType = "image/webp";    // o "image/png" si cambias el formato
+                    Response.BinaryWrite(foto);
+                }
+                else
+                {
+                    // Si no hay imagen en BD, muestro tu placeholder
+                    Response.Redirect("~/images/no-image.png");
+                }
+
+                Response.End();
+                return;  // terminamos aquí la petición
+            }
+            // ——————————————————————————————
+
+            // 2) Tu lógica normal de Page_Load
             if (Session["usuario"] == null)
                 Response.Redirect("~/Login.aspx");
 
@@ -22,6 +61,7 @@ namespace PandaMay.Productos
                 CargarProductos();
             }
         }
+
 
         // Método auxiliar para bindear el grid principal
         private void CargarProductos(string filtro = "")
@@ -81,13 +121,15 @@ namespace PandaMay.Productos
             if (foto == DBNull.Value)
                 return ResolveUrl("~/images/no-image.png");
 
-            // si llega un byte[] lo codificamos a base64
+            // Si viene un byte[], lo convertimos a Base64 con mime WebP
             if (foto is byte[] bytes)
-                return "data:image/png;base64," + Convert.ToBase64String(bytes);
+                return "data:image/webp;base64,"
+                     + Convert.ToBase64String(bytes);
 
-            // si llega string, lo tomamos como ruta
+            // Si fuera string (ruta), lo resolvemos normalmente
             return ResolveUrl(foto.ToString());
         }
+
     }
 
 

@@ -95,6 +95,7 @@
     <Content Include="Empleados\SeguimientoPedidos.aspx" />
     <Content Include="Productos\CrearProducto.aspx" />
     <Content Include="Productos\Productos.aspx" />
+    <Content Include="uploads\productos\aretes.png" />
     <Content Include="Web.config" />
   </ItemGroup>
   <ItemGroup>
