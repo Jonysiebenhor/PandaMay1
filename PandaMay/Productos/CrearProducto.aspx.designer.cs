@@ -42,6 +42,24 @@ namespace PandaMay.Productos
         protected global::System.Web.UI.WebControls.Button btnRegresar;
 
         /// <summary>
+        /// Control ddlCatMaestra.
+        /// </summary>
+        /// <remarks>
+        /// Campo generado automáticamente.
+        /// Para modificarlo, mueva la declaración del campo del archivo del diseñador al archivo de código subyacente.
+        /// </remarks>
+        protected global::System.Web.UI.WebControls.DropDownList ddlCatMaestra;
+
+        /// <summary>
+        /// Control ddlCategoria.
+        /// </summary>
+        /// <remarks>
+        /// Campo generado automáticamente.
+        /// Para modificarlo, mueva la declaración del campo del archivo del diseñador al archivo de código subyacente.
+        /// </remarks>
+        protected global::System.Web.UI.WebControls.DropDownList ddlCategoria;
+
+        /// <summary>
         /// Control ddlSubcategoria.
         /// </summary>
         /// <remarks>
@@ -49,6 +67,42 @@ namespace PandaMay.Productos
         /// Para modificarlo, mueva la declaración del campo del archivo del diseñador al archivo de código subyacente.
         /// </remarks>
         protected global::System.Web.UI.WebControls.DropDownList ddlSubcategoria;
+
+        /// <summary>
+        /// Control pnlAddSubcat.
+        /// </summary>
+        /// <remarks>
+        /// Campo generado automáticamente.
+        /// Para modificarlo, mueva la declaración del campo del archivo del diseñador al archivo de código subyacente.
+        /// </remarks>
+        protected global::System.Web.UI.WebControls.Panel pnlAddSubcat;
+
+        /// <summary>
+        /// Control txtNewSubcat.
+        /// </summary>
+        /// <remarks>
+        /// Campo generado automáticamente.
+        /// Para modificarlo, mueva la declaración del campo del archivo del diseñador al archivo de código subyacente.
+        /// </remarks>
+        protected global::System.Web.UI.WebControls.TextBox txtNewSubcat;
+
+        /// <summary>
+        /// Control txtNewSubcatDesc.
+        /// </summary>
+        /// <remarks>
+        /// Campo generado automáticamente.
+        /// Para modificarlo, mueva la declaración del campo del archivo del diseñador al archivo de código subyacente.
+        /// </remarks>
+        protected global::System.Web.UI.WebControls.TextBox txtNewSubcatDesc;
+
+        /// <summary>
+        /// Control btnGuardarSubcat.
+        /// </summary>
+        /// <remarks>
+        /// Campo generado automáticamente.
+        /// Para modificarlo, mueva la declaración del campo del archivo del diseñador al archivo de código subyacente.
+        /// </remarks>
+        protected global::System.Web.UI.WebControls.Button btnGuardarSubcat;
 
         /// <summary>
         /// Control ddlTienda.
@@ -60,6 +114,15 @@ namespace PandaMay.Productos
         protected global::System.Web.UI.WebControls.DropDownList ddlTienda;
 
         /// <summary>
+        /// Control rfvTienda.
+        /// </summary>
+        /// <remarks>
+        /// Campo generado automáticamente.
+        /// Para modificarlo, mueva la declaración del campo del archivo del diseñador al archivo de código subyacente.
+        /// </remarks>
+        protected global::System.Web.UI.WebControls.RequiredFieldValidator rfvTienda;
+
+        /// <summary>
         /// Control ddlUnidad.
         /// </summary>
         /// <remarks>
@@ -67,6 +130,15 @@ namespace PandaMay.Productos
         /// Para modificarlo, mueva la declaración del campo del archivo del diseñador al archivo de código subyacente.
         /// </remarks>
         protected global::System.Web.UI.WebControls.DropDownList ddlUnidad;
+
+        /// <summary>
+        /// Control rfvUnidad.
+        /// </summary>
+        /// <remarks>
+        /// Campo generado automáticamente.
+        /// Para modificarlo, mueva la declaración del campo del archivo del diseñador al archivo de código subyacente.
+        /// </remarks>
+        protected global::System.Web.UI.WebControls.RequiredFieldValidator rfvUnidad;
 
         /// <summary>
         /// Control pnlAddUnidad.
@@ -105,6 +177,15 @@ namespace PandaMay.Productos
         protected global::System.Web.UI.WebControls.DropDownList ddlMarca;
 
         /// <summary>
+        /// Control rfvMarca.
+        /// </summary>
+        /// <remarks>
+        /// Campo generado automáticamente.
+        /// Para modificarlo, mueva la declaración del campo del archivo del diseñador al archivo de código subyacente.
+        /// </remarks>
+        protected global::System.Web.UI.WebControls.RequiredFieldValidator rfvMarca;
+
+        /// <summary>
         /// Control pnlAddMarca.
         /// </summary>
         /// <remarks>
@@ -141,6 +222,15 @@ namespace PandaMay.Productos
         protected global::System.Web.UI.WebControls.TextBox txtNombre;
 
         /// <summary>
+        /// Control rfvNombre.
+        /// </summary>
+        /// <remarks>
+        /// Campo generado automáticamente.
+        /// Para modificarlo, mueva la declaración del campo del archivo del diseñador al archivo de código subyacente.
+        /// </remarks>
+        protected global::System.Web.UI.WebControls.RequiredFieldValidator rfvNombre;
+
+        /// <summary>
         /// Control txtReferencia.
         /// </summary>
         /// <remarks>
@@ -157,6 +247,24 @@ namespace PandaMay.Productos
         /// Para modificarlo, mueva la declaración del campo del archivo del diseñador al archivo de código subyacente.
         /// </remarks>
         protected global::System.Web.UI.WebControls.TextBox txtCodigoBarras;
+
+        /// <summary>
+        /// Control rfvCB.
+        /// </summary>
+        /// <remarks>
+        /// Campo generado automáticamente.
+        /// Para modificarlo, mueva la declaración del campo del archivo del diseñador al archivo de código subyacente.
+        /// </remarks>
+        protected global::System.Web.UI.WebControls.RequiredFieldValidator rfvCB;
+
+        /// <summary>
+        /// Control revCB.
+        /// </summary>
+        /// <remarks>
+        /// Campo generado automáticamente.
+        /// Para modificarlo, mueva la declaración del campo del archivo del diseñador al archivo de código subyacente.
+        /// </remarks>
+        protected global::System.Web.UI.WebControls.RegularExpressionValidator revCB;
 
         /// <summary>
         /// Control chkActivo.

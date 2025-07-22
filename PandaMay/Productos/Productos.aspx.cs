@@ -1,5 +1,7 @@
-﻿using PandaMay;
+﻿using PandaMay;  // Ajusta al namespace donde esté tu clase Conectar
 using System;
+using System.Data;
+using System.Data.SqlClient;
 using System.Web.UI;
 using System.Web.UI.WebControls;
 
@@ -11,6 +13,7 @@ namespace PandaMay.Productos
 
         protected void Page_Load(object sender, EventArgs e)
         {
+           
             if (Session["usuario"] == null)
                 Response.Redirect("~/Login.aspx");
 
@@ -21,6 +24,8 @@ namespace PandaMay.Productos
             }
         }
 
+
+        // Método auxiliar para bindear el grid principal
         private void CargarProductos(string filtro = "")
         {
             conectado.conectar();
@@ -32,16 +37,19 @@ namespace PandaMay.Productos
             conectado.desconectar();
         }
 
+        // Búsqueda en vivo
         protected void txtBuscar_TextChanged(object sender, EventArgs e)
         {
             CargarProductos(txtBuscar.Text.Trim());
         }
 
+        // Redirigir a CrearProducto.aspx
         protected void btnCrearProducto_Click(object sender, EventArgs e)
         {
             Response.Redirect("CrearProducto.aspx");
         }
 
+        // Al seleccionar un producto, cargamos los grids de detalle
         protected void Select1(object sender, GridViewSelectEventArgs e)
         {
             int idProducto = Convert.ToInt32(GridView1.DataKeys[e.NewSelectedIndex].Value);
@@ -58,6 +66,7 @@ namespace PandaMay.Productos
             gvAtributos.DataSource = conectado.GetByProducto("ATRIBUTOS", idProducto);
             gvExistencias.DataSource = conectado.GetByProducto("EXISTENCIAS", idProducto);
 
+
             gvCombosProductos.DataBind();
             gvDetallesCompras.DataBind();
             gvDetallesTraslados.DataBind();
@@ -69,5 +78,37 @@ namespace PandaMay.Productos
 
             conectado.desconectar();
         }
+
+        protected string GetFotoUrl(object foto)
+        {
+            if (foto == DBNull.Value)
+                return ResolveUrl("~/images/no-image.png");
+
+            // Si viene un byte[], lo convertimos a Base64 con mime WebP
+            if (foto is byte[] bytes)
+                return "data:image/webp;base64,"
+                     + Convert.ToBase64String(bytes);
+
+            // Si fuera string (ruta), lo resolvemos normalmente
+            return ResolveUrl(foto.ToString());
+        }
+
+        protected void GridView1_RowDataBound(object sender, GridViewRowEventArgs e)
+        {
+            if (e.Row.RowType != DataControlRowType.DataRow) return;
+
+            var drv = (DataRowView)e.Row.DataItem;
+            int idProd = Convert.ToInt32(drv["idproducto"]);
+
+            var img = (Image)e.Row.FindControl("imgFoto");
+            if (img != null)
+            {
+                img.ImageUrl = ResolveUrl("~/VerImagen.ashx?id=" + idProd + "&t=" + DateTime.Now.Ticks);
+            }
+        }
+
+
     }
+
+
 }

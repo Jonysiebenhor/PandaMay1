@@ -81,6 +81,7 @@
           AutoGenerateColumns="false"
           AutoGenerateSelectButton="True"
           OnSelectedIndexChanging="Select1"
+          OnRowDataBound="GridView1_RowDataBound"
           GridLines="Both"
           BorderColor="#ccc"
           BorderWidth="1px"
@@ -134,12 +135,12 @@
               </ItemTemplate>
             </asp:TemplateField>
 
-            <asp:TemplateField HeaderText="Imagen">
-              <ItemTemplate>
-                <asp:Image ID="imgFoto" runat="server" Width="60px" Height="60px"
-                  ImageUrl='<%# "~/VerImagen.ashx?id=" + Eval("idproducto") %>' />
-              </ItemTemplate>
-            </asp:TemplateField>
+<asp:TemplateField HeaderText="Imagen">
+    <ItemTemplate>
+        <asp:Image ID="imgFoto" runat="server" Width="60" Height="60" />
+    </ItemTemplate>
+</asp:TemplateField>
+
           </Columns>
         </asp:GridView>
       </div>

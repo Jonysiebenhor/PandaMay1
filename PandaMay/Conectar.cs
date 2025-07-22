@@ -118,30 +118,12 @@ SELECT
   a.codigodebarras,
   a.referencia,
   a.nombre,
-  (SELECT b.precio FROM precios b 
-     WHERE b.nombre = 'unidad'   AND b.idproducto = a.idproducto
-  ) AS unidad,
-  (SELECT b.precio FROM precios b 
-     WHERE b.nombre = '3 o más'  AND b.idproducto = a.idproducto
-  ) AS tresomas,
-  (SELECT b.precio FROM precios b 
-     WHERE b.nombre = 'docena'    AND b.idproducto = a.idproducto
-  ) AS docena,
-  (SELECT b.precio FROM precios b 
-     WHERE b.nombre = 'fardo'     AND b.idproducto = a.idproducto
-  ) AS fardo,
-  -- Traemos la foto más reciente (activo=1) de la tabla Imagenes
-  img.foto
+  (SELECT b.precio FROM precios b WHERE b.nombre = 'unidad'   AND b.idproducto = a.idproducto) AS unidad,
+  (SELECT b.precio FROM precios b WHERE b.nombre = '3 o más'  AND b.idproducto = a.idproducto) AS tresomas,
+  (SELECT b.precio FROM precios b WHERE b.nombre = 'docena'   AND b.idproducto = a.idproducto) AS docena,
+  (SELECT b.precio FROM precios b WHERE b.nombre = 'fardo'    AND b.idproducto = a.idproducto) AS fardo
 FROM productos a
-OUTER APPLY (
-  SELECT TOP 1 i.foto
-  FROM imagenes i
-  WHERE i.idproducto = a.idproducto AND i.activo = 1
-  ORDER BY i.fecha DESC
-) img
-ORDER BY a.nombre;
-";
-
+ORDER BY a.nombre;";
             using (var cmd = new SqlCommand(query, conexion))
             using (var da = new SqlDataAdapter(cmd))
             {
@@ -173,32 +155,15 @@ SELECT
   a.codigodebarras,
   a.referencia,
   a.nombre,
-  (SELECT b.precio FROM precios b 
-     WHERE b.nombre = 'unidad'   AND b.idproducto = a.idproducto
-  ) AS unidad,
-  (SELECT b.precio FROM precios b 
-     WHERE b.nombre = '3 o más'  AND b.idproducto = a.idproducto
-  ) AS tresomas,
-  (SELECT b.precio FROM precios b 
-     WHERE b.nombre = 'docena'    AND b.idproducto = a.idproducto
-  ) AS docena,
-  (SELECT b.precio FROM precios b 
-     WHERE b.nombre = 'fardo'     AND b.idproducto = a.idproducto
-  ) AS fardo,
-  img.foto
+  (SELECT b.precio FROM precios b WHERE b.nombre = 'unidad'   AND b.idproducto = a.idproducto) AS unidad,
+  (SELECT b.precio FROM precios b WHERE b.nombre = '3 o más'  AND b.idproducto = a.idproducto) AS tresomas,
+  (SELECT b.precio FROM precios b WHERE b.nombre = 'docena'   AND b.idproducto = a.idproducto) AS docena,
+  (SELECT b.precio FROM precios b WHERE b.nombre = 'fardo'    AND b.idproducto = a.idproducto) AS fardo
 FROM productos a
-OUTER APPLY (
-  SELECT TOP 1 i.foto
-  FROM imagenes i
-  WHERE i.idproducto = a.idproducto AND i.activo = 1
-  ORDER BY i.fecha DESC
-) img
 WHERE a.nombre        LIKE @busc
    OR a.referencia     LIKE @busc
    OR a.codigodebarras LIKE @busc
-ORDER BY a.nombre;
-";
-
+ORDER BY a.nombre;";
             using (var cmd = new SqlCommand(query, conexion))
             {
                 cmd.Parameters.AddWithValue("@busc", $"%{buscar}%");
@@ -210,6 +175,7 @@ ORDER BY a.nombre;
                 }
             }
         }
+
 
 
 
@@ -459,17 +425,52 @@ ORDER BY a.nombre;
             returnVal.Fill(dt);
             return dt;
         }
-        public DataTable GetByProducto(string tableName, int idproducto)
+        public DataTable GetByProducto(string tableName, int idProducto)
         {
-            string sql = $"SELECT * FROM {tableName} WHERE idproducto = @id";
-            using (var cmd = new SqlCommand(sql, conexion))
+            if (string.IsNullOrWhiteSpace(tableName))
+                throw new ArgumentNullException(nameof(tableName));
+
+            var t = tableName.Trim().ToUpperInvariant();
+
+            // Solo las tablas que sabemos que tienen idproducto
+            switch (t)
             {
-                cmd.Parameters.AddWithValue("@id", idproducto);
-                var da = new SqlDataAdapter(cmd);
-                var dt = new DataTable();
-                da.Fill(dt);
-                return dt;
+                case "ATRIBUTOS":
+                case "COMBOSPRODUCTOS":
+                case "DETALLESCOMPRAS":
+                case "DETALLESTRASLADOS":
+                case "DETALLESVENTAS":
+                case "EXISTENCIAS":
+                case "PRECIOS":
+                case "PRECIOSCOMPRAS":
+                case "PRODUCTOS":
+                    break;
+                default:
+                    throw new ArgumentException($"Tabla no soportada o sin columna idproducto: {tableName}");
+            }
+
+            string sql = $"SELECT * FROM [{t}] WHERE idproducto = @id";
+
+            try
+            {
+                using (var cmd = new SqlCommand(sql, conexion))
+                {
+                    cmd.Parameters.AddWithValue("@id", idProducto);
+                    using (var da = new SqlDataAdapter(cmd))
+                    {
+                        var dt = new DataTable();
+                        da.Fill(dt);
+                        return dt;
+                    }
+                }
+            }
+            catch (SqlException ex)
+            {
+                throw new Exception($"Error en tabla '{t}'. SQL: {sql}. Mensaje SQL: {ex.Message}", ex);
             }
         }
-    } 
+
+
+
+    }
 }
