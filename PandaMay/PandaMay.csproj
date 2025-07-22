@@ -199,11 +199,15 @@
     <Compile Include="Empleados\SeguimientoPedidos.aspx.designer.cs">
       <DependentUpon>SeguimientoPedidos.aspx</DependentUpon>
     </Compile>
+    <Compile Include="VerImagen.ashx.cs">
+      <DependentUpon>VerImagen.ashx</DependentUpon>
+    </Compile>
   </ItemGroup>
   <ItemGroup>
     <Content Include="MasterPage.Master" />
     <Content Include="MasterPage2.Master" />
     <None Include="packages.config" />
+    <Content Include="VerImagen.ashx" />
     <None Include="Web.Debug.config">
       <DependentUpon>Web.config</DependentUpon>
     </None>
