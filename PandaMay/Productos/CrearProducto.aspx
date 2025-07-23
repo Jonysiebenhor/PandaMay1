@@ -50,23 +50,44 @@
     <legend>Datos de Producto</legend>
     <div class="form-grid">
       <!-- Subcategoría -->
-      <!-- Cat. maestra -->
+    <!-- Categoría maestra -->
 <div class="field-group">
   <label>Categoría maestra:</label>
   <asp:DropDownList ID="ddlCatMaestra" runat="server"
-      CssClass="form-control"
-      AutoPostBack="true"
+      CssClass="form-control" AutoPostBack="true"
+      CausesValidation="false"
       OnSelectedIndexChanged="ddlCatMaestra_SelectedIndexChanged" />
 </div>
+
+<asp:Panel ID="pnlAddCatM" runat="server" Visible="false" style="margin-top:.5rem;">
+  <asp:TextBox ID="txtNewCatM" runat="server" CssClass="form-control"
+      placeholder="Nueva categoría maestra..." />
+  <asp:TextBox ID="txtNewCatMDesc" runat="server" CssClass="form-control"
+      placeholder="Descripción (opcional)..." style="margin-top:.4rem;" />
+  <asp:Button ID="btnGuardarCatM" runat="server" CssClass="greenbutton"
+      Text="Guardar cat. maestra" OnClick="btnGuardarCatM_Click"
+      CausesValidation="false" />
+</asp:Panel>
 
 <!-- Categoría -->
 <div class="field-group">
   <label>Categoría:</label>
   <asp:DropDownList ID="ddlCategoria" runat="server"
-      CssClass="form-control"
-      AutoPostBack="true"
+      CssClass="form-control" AutoPostBack="true"
+      CausesValidation="false"
       OnSelectedIndexChanged="ddlCategoria_SelectedIndexChanged" />
 </div>
+
+<asp:Panel ID="pnlAddCat" runat="server" Visible="false" style="margin-top:.5rem;">
+  <asp:TextBox ID="txtNewCat" runat="server" CssClass="form-control"
+      placeholder="Nueva categoría..." />
+  <asp:TextBox ID="txtNewCatDesc" runat="server" CssClass="form-control"
+      placeholder="Descripción (opcional)..." style="margin-top:.4rem;" />
+  <asp:Button ID="btnGuardarCat" runat="server" CssClass="greenbutton"
+      Text="Guardar categoría" OnClick="btnGuardarCat_Click"
+      CausesValidation="false" />
+</asp:Panel>
+
 
 <!-- Subcategoría -->
 <div class="field-group">

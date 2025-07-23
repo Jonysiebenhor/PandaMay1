@@ -134,13 +134,12 @@ namespace PandaMay.Productos
                 cn.Open();
                 using (var dr = cmd.ExecuteReader())
                     while (dr.Read())
-                        ddlCatMaestra.Items.Add(new ListItem(
-                            dr["nombre"].ToString(),
-                            dr["idcategoriamaestra"].ToString()));
+                        ddlCatMaestra.Items.Add(new ListItem(dr["nombre"].ToString(),
+                                                             dr["idcategoriamaestra"].ToString()));
             }
-            // Si quieres permitir crear nuevas cat. maestras, agrega aquí un "0"
-            // ddlCatMaestra.Items.Add(new ListItem("-- Agregar nueva cat. maestra --", "0"));
+            ddlCatMaestra.Items.Add(new ListItem("-- Agregar nueva cat. maestra --", "0")); // <-- NUEVO
         }
+
 
         private void CargarCategoriasPorMaestra(int idMaestra)
         {
@@ -202,6 +201,19 @@ namespace PandaMay.Productos
         protected void ddlCatMaestra_SelectedIndexChanged(object sender, EventArgs e)
         {
             pnlAddSubcat.Visible = false;
+            pnlAddCat.Visible = false;
+
+            if (ddlCatMaestra.SelectedValue == "0")
+            {
+                // Mostrar panel para nueva Cat. Maestra
+                pnlAddCatM.Visible = true;
+
+                // Limpiar combos de categoría y subcategoría
+                LimpiarCombosCategorias();
+                return;
+            }
+
+            pnlAddCatM.Visible = false;
 
             if (int.TryParse(ddlCatMaestra.SelectedValue, out int idM) && idM > 0)
             {
@@ -221,17 +233,22 @@ namespace PandaMay.Productos
 
             if (ddlCategoria.SelectedValue == "0")
             {
-                // Aquí podrías abrir un panel para crear categoría (si quieres)
+                // Mostrar panel para nueva Categoría
+                pnlAddCat.Visible = true;
                 ddlSubcategoria.Items.Clear();
                 ddlSubcategoria.Items.Add(new ListItem("-- Subcategoría --", ""));
                 return;
             }
+
+            pnlAddCat.Visible = false;
 
             if (int.TryParse(ddlCategoria.SelectedValue, out int idC) && idC > 0)
             {
                 CargarSubcategoriasPorCategoria(idC);
             }
         }
+
+
 
         protected void ddlSubcategoria_SelectedIndexChanged(object sender, EventArgs e)
         {
@@ -361,6 +378,111 @@ VALUES (@c, @s, NULL, 1);", cn, tx))
             pnlAddUnidad.Visible = false;
             txtNewUnidad.Text = "";
         }
+
+        // ====== NUEVO: Guardar CATEGORÍA MAESTRA ======
+        protected void btnGuardarCatM_Click(object sender, EventArgs e)
+        {
+            lblError.Visible = false;
+
+            var nombre = txtNewCatM.Text.Trim();
+            var desc = txtNewCatMDesc.Text.Trim();
+
+            if (string.IsNullOrEmpty(nombre))
+            {
+                MostrarError("Ingrese el nombre de la categoría maestra.");
+                return;
+            }
+
+            int newId;
+            using (var cn = new SqlConnection(_connString))
+            using (var cmd = new SqlCommand(@"
+        INSERT INTO CATEGORIASMAESTRAS (nombre, descripcion, descuento, activo, fecha)
+        OUTPUT INSERTED.idcategoriamaestra
+        VALUES (@n, @d, 0, 1, GETDATE());", cn))
+            {
+                cmd.Parameters.AddWithValue("@n", nombre);
+                cmd.Parameters.AddWithValue("@d", string.IsNullOrEmpty(desc) ? (object)DBNull.Value : desc);
+                cn.Open();
+                newId = (int)cmd.ExecuteScalar();
+            }
+
+            CargarCategoriasMaestras();
+            ddlCatMaestra.SelectedValue = newId.ToString();
+
+            pnlAddCatM.Visible = false;
+            txtNewCatM.Text = txtNewCatMDesc.Text = "";
+
+            LimpiarCombosCategorias();
+        }
+
+        protected void btnGuardarCat_Click(object sender, EventArgs e)
+        {
+            lblError.Visible = false;
+
+            if (!int.TryParse(ddlCatMaestra.SelectedValue, out int idM) || idM <= 0)
+            {
+                MostrarError("Seleccione una categoría maestra antes de crear la categoría.");
+                return;
+            }
+
+            var nombre = txtNewCat.Text.Trim();
+            var desc = txtNewCatDesc.Text.Trim();
+
+            if (string.IsNullOrEmpty(nombre))
+            {
+                MostrarError("Ingrese el nombre de la categoría.");
+                return;
+            }
+
+            int newCatId;
+            using (var cn = new SqlConnection(_connString))
+            {
+                cn.Open();
+                using (var tx = cn.BeginTransaction())
+                {
+                    try
+                    {
+                        using (var cmd = new SqlCommand(@"
+INSERT INTO CATEGORIAS (nombre, descripcion, descuento, activo, fecha)
+OUTPUT INSERTED.idcategoria
+VALUES (@n, @d, 0, 1, GETDATE());", cn, tx))
+                        {
+                            cmd.Parameters.AddWithValue("@n", nombre);
+                            cmd.Parameters.AddWithValue("@d", string.IsNullOrEmpty(desc) ? (object)DBNull.Value : desc);
+                            newCatId = (int)cmd.ExecuteScalar();
+                        }
+
+                        using (var cmd2 = new SqlCommand(@"
+INSERT INTO CATEGORIASMAESTRASCATEGORIAS (idcategoriamaestra, idcategoria, descripcion, activo)
+VALUES (@m, @c, NULL, 1);", cn, tx))
+                        {
+                            cmd2.Parameters.AddWithValue("@m", idM);
+                            cmd2.Parameters.AddWithValue("@c", newCatId);
+                            cmd2.ExecuteNonQuery();
+                        }
+
+                        tx.Commit();
+                    }
+                    catch (Exception ex)
+                    {
+                        try { tx.Rollback(); } catch { }
+                        MostrarError("No se pudo guardar la categoría: " + ex.Message);
+                        return;
+                    }
+                }
+            }
+
+            CargarCategoriasPorMaestra(idM);
+            ddlCategoria.SelectedValue = newCatId.ToString();
+
+            pnlAddCat.Visible = false;
+            txtNewCat.Text = txtNewCatDesc.Text = "";
+
+            ddlSubcategoria.Items.Clear();
+            ddlSubcategoria.Items.Add(new ListItem("-- Subcategoría --", ""));
+        }
+
+
 
 
         protected void ddlMarca_SelectedIndexChanged(object s, EventArgs e)
