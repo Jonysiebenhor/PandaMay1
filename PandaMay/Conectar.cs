@@ -337,7 +337,7 @@ ORDER BY a.nombre;";
             returnVal.Fill(dt);
             return dt;
         }
-        public DataTable direcciones(String idcliente, String idpais, String iddepartamento, String idmunicipio, String idzona, String idtarifa, String idempleado, String idtienda, String idmensajeria,  String direccion)
+        public DataTable direcciones(String idcliente, String idpais, String iddepartamento, String idmunicipio, String idzona, String idtarifa, String idempleado, String idtienda, String idmensajeria, String direccion)
         {
             string query = "INSERT INTO DIRECCIONES" +
 
@@ -470,6 +470,42 @@ ORDER BY a.nombre;";
             }
         }
 
+        public DataRow ObtenerProductoCompleto(int idProducto)
+        {
+            using (SqlConnection cn = new SqlConnection(conexionString)) 
+                                                                          // ✅ correcto
+
+            {
+                cn.Open();
+
+                SqlCommand cmd = new SqlCommand(@"
+            SELECT 
+                p.idproducto, p.nombre, p.referencia, p.codigodebarras,
+                p.tipodeproducto, p.descuento, p.activo,
+                u.nombre AS unidad,
+                m.nombre AS marca,
+                s.nombre AS subcategoria,
+                c.nombre AS categoria,
+                cm.nombre AS categoriamaestra
+            FROM PRODUCTOS p
+            LEFT JOIN UNIDADDEMEDIDAS u ON u.idunidaddemedida = p.idunidaddemedida
+            LEFT JOIN MARCAS m ON m.idmarca = p.idmarca
+            LEFT JOIN SUBCATEGORIAS s ON s.idsubcategoria = p.idsubcategoria
+            LEFT JOIN CATEGORIASSUBCATEGORIAS cs ON cs.idsubcategoria = s.idsubcategoria
+            LEFT JOIN CATEGORIAS c ON c.idcategoria = cs.idcategoria
+            LEFT JOIN CATEGORIASMAESTRASCATEGORIAS cmc ON cmc.idcategoria = c.idcategoria
+            LEFT JOIN CATEGORIASMAESTRAS cm ON cm.idcategoriamaestra = cmc.idcategoriamaestra
+            WHERE p.idproducto = @id", cn);
+
+                cmd.Parameters.AddWithValue("@id", idProducto);
+
+                SqlDataAdapter da = new SqlDataAdapter(cmd);
+                DataTable dt = new DataTable();
+                da.Fill(dt);
+
+                return dt.Rows.Count > 0 ? dt.Rows[0] : null;
+            }
+        }
 
 
     }

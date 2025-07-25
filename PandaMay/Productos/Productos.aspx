@@ -12,7 +12,60 @@
 
 <asp:Content ID="Content2" ContentPlaceHolderID="head" runat="server">
   <!-- Aquí tu CSS adicional -->
+  <style>
+    /* Contenedor principal */
+    .detalle-tarjeta {
+      border: 2px solid #e0e0e0;
+      border-radius: 12px;
+      background-color: #fafafa;
+      padding: 20px;
+      margin-top: 20px;
+      box-shadow: 0 0 10px rgba(0,0,0,0.1);
+    }
+
+    /* Cabecera: datos + foto */
+    .detalle-cabecera {
+      display: flex;
+      gap: 20px;
+      align-items: flex-start;
+    }
+
+    /* Foto del producto */
+    .producto-img {
+      width: 180px;
+      height: 180px;
+      object-fit: cover;
+      border-radius: 10px;
+      border: 1px solid #ccc;
+    }
+
+    /* Bloque de texto con los datos */
+    .detalle-info p {
+      margin: 5px 0;
+      font-size: 15px;
+    }
+
+    /* Grid de precios */
+    .detalle-precios {
+      margin-top: 20px;
+    }
+    .tabla-precios {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 14px;
+    }
+    .tabla-precios th,
+    .tabla-precios td {
+      padding: 8px;
+      border: 1px solid #ccc;
+    }
+    .tabla-precios th {
+      background-color: #f0f0f0;
+      font-weight: bold;
+    }
+  </style>
 </asp:Content>
+
 
 <asp:Content ID="Content3" ContentPlaceHolderID="body" runat="server">
 
@@ -36,8 +89,33 @@
 
       <!-- Panel izquierdo: detalles -->
       <div style="width:35%; padding-right:20px;">
-        <asp:Panel ID="pnlDetalles" runat="server" Visible="false">
+        <asp:Panel ID="pnlDetalles" runat="server"
+           Visible="false"
+           CssClass="detalle-tarjeta">
           <h4>Detalles completos</h4>
+
+            <!-- Detalles del producto seleccionado -->
+<div class="detalle-cabecera">
+  <!-- Datos textuales -->
+  <div class="detalle-info">
+    <p><strong>Nombre:</strong> <asp:Label ID="lblNombre" runat="server" /></p>
+    <p><strong>Referencia:</strong> <asp:Label ID="lblReferencia" runat="server" /></p>
+    <p><strong>Código de barras:</strong> <asp:Label ID="lblCodigoBarras" runat="server" /></p>
+    <p><strong>Descuento:</strong> <asp:Label ID="lblDescuento" runat="server" /></p>
+    <p><strong>Marca:</strong> <asp:Label ID="lblMarca" runat="server" /></p>
+    <p><strong>Unidad:</strong> <asp:Label ID="lblUnidad" runat="server" /></p>
+    <p><strong>Categoría:</strong> <asp:Label ID="lblCategoria" runat="server" /></p>
+    <p><strong>Subcategoría:</strong> <asp:Label ID="lblSubcategoria" runat="server" /></p>
+    <p><strong>Categoría maestra:</strong> <asp:Label ID="lblCatMaestra" runat="server" /></p>
+    <p><strong>Tipo:</strong> <asp:Label ID="lblTipo" runat="server" /></p>
+    <p><strong>Activo:</strong> <asp:CheckBox ID="chkActivo" runat="server" Enabled="false" /></p>
+  </div>
+  <!-- Imagen del producto -->
+  <asp:Image ID="imgFotoDetalle" runat="server"
+             CssClass="producto-img" />
+</div>
+
+
 
           <div style="overflow-x:auto; margin-bottom:20px;">
             <asp:GridView ID="gvCombosProductos" runat="server" AutoGenerateColumns="true" GridLines="Both"
@@ -55,10 +133,23 @@
             <asp:GridView ID="gvDetallesVentas" runat="server" AutoGenerateColumns="true" GridLines="Both"
               BorderColor="#ccc" BorderWidth="1px" Width="100%" />
           </div>
-          <div style="overflow-x:auto; margin-bottom:20px;">
-            <asp:GridView ID="gvPrecios" runat="server" AutoGenerateColumns="true" GridLines="Both"
-              BorderColor="#ccc" BorderWidth="1px" Width="100%" />
-          </div>
+
+          <div class="detalle-precios">
+  <asp:GridView ID="gvPrecios" runat="server"
+      AutoGenerateColumns="false"
+      CssClass="tabla-precios"
+      OnRowDataBound="GridView1_RowDataBound"> 
+    <Columns>
+      <asp:BoundField DataField="idprecio" HeaderText="ID Precio" />
+      <asp:BoundField DataField="idproducto" HeaderText="ID Producto" />
+      <asp:BoundField DataField="descripcion" HeaderText="Descripción" />
+      <asp:BoundField DataField="precio" HeaderText="Precio" DataFormatString="{0:C}" />
+      <asp:BoundField DataField="cantidad" HeaderText="Cantidad" />
+      <asp:CheckBoxField DataField="activo" HeaderText="Activo" />
+    </Columns>
+  </asp:GridView>
+</div>
+
           <div style="overflow-x:auto; margin-bottom:20px;">
             <asp:GridView ID="gvPreciosCompras" runat="server" AutoGenerateColumns="true" GridLines="Both"
               BorderColor="#ccc" BorderWidth="1px" Width="100%" />

@@ -54,6 +54,25 @@ namespace PandaMay.Productos
         {
             int idProducto = Convert.ToInt32(GridView1.DataKeys[e.NewSelectedIndex].Value);
 
+            // NUEVO BLOQUE INSERTADO
+            var datos = conectado.ObtenerProductoCompleto(idProducto);
+            if (datos != null)
+            {
+                lblNombre.Text = datos["nombre"].ToString();
+                lblReferencia.Text = datos["referencia"].ToString();
+                lblCodigoBarras.Text = datos["codigodebarras"].ToString();
+                lblUnidad.Text = datos["unidad"].ToString();
+                lblMarca.Text = datos["marca"].ToString();
+                lblSubcategoria.Text = datos["subcategoria"].ToString();
+                lblCategoria.Text = datos["categoria"].ToString();
+                lblCatMaestra.Text = datos["categoriamaestra"].ToString();
+                lblDescuento.Text = datos["descuento"].ToString();
+                lblTipo.Text = datos["tipodeproducto"].ToString();
+                chkActivo.Checked = Convert.ToBoolean(datos["activo"]);
+
+                imgFotoDetalle.ImageUrl = "~/VerImagen.ashx?id=" + idProducto + "&detalle=1&t=" + DateTime.Now.Ticks;
+            }
+
             pnlDetalles.Visible = true;
             conectado.conectar();
 
@@ -66,7 +85,6 @@ namespace PandaMay.Productos
             gvAtributos.DataSource = conectado.GetByProducto("ATRIBUTOS", idProducto);
             gvExistencias.DataSource = conectado.GetByProducto("EXISTENCIAS", idProducto);
 
-
             gvCombosProductos.DataBind();
             gvDetallesCompras.DataBind();
             gvDetallesTraslados.DataBind();
@@ -78,6 +96,7 @@ namespace PandaMay.Productos
 
             conectado.desconectar();
         }
+
 
         protected string GetFotoUrl(object foto)
         {
