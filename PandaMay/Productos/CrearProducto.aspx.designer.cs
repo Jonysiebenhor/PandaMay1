@@ -366,6 +366,42 @@ namespace PandaMay.Productos
         protected global::System.Web.UI.WebControls.TextBox txtDescuento;
 
         /// <summary>
+        /// Control pnlAddTarifa.
+        /// </summary>
+        /// <remarks>
+        /// Campo generado automáticamente.
+        /// Para modificarlo, mueva la declaración del campo del archivo del diseñador al archivo de código subyacente.
+        /// </remarks>
+        protected global::System.Web.UI.WebControls.Panel pnlAddTarifa;
+
+        /// <summary>
+        /// Control txtTarifaNombre.
+        /// </summary>
+        /// <remarks>
+        /// Campo generado automáticamente.
+        /// Para modificarlo, mueva la declaración del campo del archivo del diseñador al archivo de código subyacente.
+        /// </remarks>
+        protected global::System.Web.UI.WebControls.TextBox txtTarifaNombre;
+
+        /// <summary>
+        /// Control txtTarifaCantidad.
+        /// </summary>
+        /// <remarks>
+        /// Campo generado automáticamente.
+        /// Para modificarlo, mueva la declaración del campo del archivo del diseñador al archivo de código subyacente.
+        /// </remarks>
+        protected global::System.Web.UI.WebControls.TextBox txtTarifaCantidad;
+
+        /// <summary>
+        /// Control btnGuardarTarifa.
+        /// </summary>
+        /// <remarks>
+        /// Campo generado automáticamente.
+        /// Para modificarlo, mueva la declaración del campo del archivo del diseñador al archivo de código subyacente.
+        /// </remarks>
+        protected global::System.Web.UI.WebControls.Button btnGuardarTarifa;
+
+        /// <summary>
         /// Control ddlImgColor.
         /// </summary>
         /// <remarks>

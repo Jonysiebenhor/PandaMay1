@@ -110,31 +110,200 @@ namespace PandaMay
             returnVal.Fill(dt);
             return dt;
         }
-        public DataTable productos()
+        public DataTable Productos()
         {
             const string query = @"
-SELECT 
-  a.idproducto,
-  a.codigodebarras,
-  a.referencia,
-  a.nombre,
-  (SELECT b.precio FROM precios b WHERE b.nombre = 'unidad'   AND b.idproducto = a.idproducto) AS unidad,
-  (SELECT b.precio FROM precios b WHERE b.nombre = '3 o más'  AND b.idproducto = a.idproducto) AS tresomas,
-  (SELECT b.precio FROM precios b WHERE b.nombre = 'docena'   AND b.idproducto = a.idproducto) AS docena,
-  (SELECT b.precio FROM precios b WHERE b.nombre = 'fardo'    AND b.idproducto = a.idproducto) AS fardo
-FROM productos a
-ORDER BY a.nombre;";
-            using (var cmd = new SqlCommand(query, conexion))
+WITH UltimaImagen AS (
+    SELECT
+      idproducto,
+      idimagen,
+      ROW_NUMBER() OVER(
+        PARTITION BY idproducto
+        ORDER BY fechaingreso DESC, idexistencia DESC
+      ) AS rn
+    FROM dbo.EXISTENCIAS
+    WHERE idimagen IS NOT NULL
+),
+PreciosPorProducto AS (
+    SELECT 
+      e.idproducto,
+      np.nombre      AS tarifa,
+      pr.precio
+    FROM dbo.PRECIOS pr
+    JOIN dbo.EXISTENCIAS e     ON pr.idexistencia   = e.idexistencia
+    JOIN dbo.nombresPrecios np ON pr.idnombreprecio = np.idnombreprecio
+    WHERE pr.activo = 1
+)
+SELECT
+  p.idproducto,
+  ui.idimagen,                   -- <-- lo agregamos aquí
+  p.codigodebarras,
+  p.referencia,
+  MAX(CASE WHEN ppp.tarifa = 'unidad'  THEN ppp.precio END)   AS unidad,
+  MAX(CASE WHEN ppp.tarifa = '3 o más' THEN ppp.precio END)   AS tresomas,
+  MAX(CASE WHEN ppp.tarifa = 'docena'  THEN ppp.precio END)   AS docena,
+  MAX(CASE WHEN ppp.tarifa = 'fardo'   THEN ppp.precio END)   AS fardo,
+  p.nombre
+FROM dbo.PRODUCTOS p
+LEFT JOIN UltimaImagen ui
+  ON ui.idproducto = p.idproducto AND ui.rn = 1
+LEFT JOIN PreciosPorProducto ppp
+  ON ppp.idproducto = p.idproducto
+GROUP BY
+  p.idproducto,
+  ui.idimagen,                   -- <-- y también en el GROUP BY
+  p.codigodebarras,
+  p.referencia,
+  p.nombre
+ORDER BY p.nombre;";
+
+            var dt = new DataTable();
+            using (var conn = new SqlConnection(conexionString))
+            using (var cmd = new SqlCommand(query, conn))
             using (var da = new SqlDataAdapter(cmd))
             {
-                var dt = new DataTable();
+                conn.Open();
                 da.Fill(dt);
-                return dt;
             }
+            return dt;
         }
 
 
 
+        public DataTable productos() => Productos();
+
+        /// <summary>
+        /// Devuelve el listado completo de productos con todas sus tarifas
+        /// (unidad, 3+, docena, fardo y cualquier columna extra).
+        /// </summary>
+        public DataTable GetProductosConTarifas()
+        {
+            const string sql = @"
+WITH UltimaImagen AS (
+    -- Para cada producto, la existencia más reciente (fechaingreso DESC, idexistencia DESC)
+    SELECT
+      idproducto,
+      idimagen,
+      ROW_NUMBER() OVER(
+        PARTITION BY idproducto
+        ORDER BY fechaingreso DESC, idexistencia DESC
+      ) AS rn
+    FROM dbo.EXISTENCIAS
+    WHERE idimagen IS NOT NULL
+),
+PreciosPorProducto AS (
+    SELECT 
+      e.idproducto,
+      np.nombre      AS tarifa,
+      pr.precio
+    FROM dbo.PRECIOS pr
+    JOIN dbo.EXISTENCIAS e     ON pr.idexistencia   = e.idexistencia
+    JOIN dbo.nombresPrecios np ON pr.idnombreprecio = np.idnombreprecio
+    WHERE pr.activo = 1
+)
+SELECT
+  p.idproducto,
+  ui.idimagen,                    -- 1) TRAEMOS AQUÍ EL IDDEIMAGEN
+  p.codigodebarras,
+  p.referencia,
+  MAX(CASE WHEN ppp.tarifa = 'unidad'  THEN ppp.precio END)   AS unidad,
+  MAX(CASE WHEN ppp.tarifa = '3 o más' THEN ppp.precio END)   AS tresomas,
+  MAX(CASE WHEN ppp.tarifa = 'docena'  THEN ppp.precio END)   AS docena,
+  MAX(CASE WHEN ppp.tarifa = 'fardo'   THEN ppp.precio END)   AS fardo,
+  p.nombre
+FROM dbo.PRODUCTOS p
+LEFT JOIN UltimaImagen ui
+  ON ui.idproducto = p.idproducto
+ AND ui.rn = 1
+LEFT JOIN PreciosPorProducto ppp
+  ON ppp.idproducto = p.idproducto
+GROUP BY
+  p.idproducto,
+  ui.idimagen,                    -- 2) Y TAMBIÉN EN EL GROUP BY
+  p.codigodebarras,
+  p.referencia,
+  p.nombre
+ORDER BY p.nombre;";
+
+            var dt = new DataTable();
+            using (var conn = new SqlConnection(conexionString))
+            using (var cmd = new SqlCommand(sql, conn))
+            using (var da = new SqlDataAdapter(cmd))
+            {
+                conn.Open();
+                da.Fill(dt);
+            }
+            return dt;
+        }
+
+        /// <summary>
+        /// Busca productos cuyo nombre, referencia o código de barras contenga el filtro,
+        /// devolviendo también los mismos cuatro precios.
+        /// </summary>
+        public DataTable BuscarProductosConTarifas(string filtro)
+        {
+            const string sql = @"
+WITH UltimaImagen AS (
+    -- Seleccionamos la existencia más reciente con imagen para cada producto
+    SELECT
+      idproducto,
+      idimagen,
+      ROW_NUMBER() OVER(
+        PARTITION BY idproducto
+        ORDER BY fechaingreso DESC, idexistencia DESC
+      ) AS rn
+    FROM dbo.EXISTENCIAS
+    WHERE idimagen IS NOT NULL
+),
+PreciosPorProducto AS (
+    SELECT 
+      e.idproducto,
+      np.nombre      AS tarifa,
+      pr.precio
+    FROM dbo.PRECIOS pr
+    JOIN dbo.EXISTENCIAS e     ON pr.idexistencia   = e.idexistencia
+    JOIN dbo.nombresPrecios np ON pr.idnombreprecio = np.idnombreprecio
+    WHERE pr.activo = 1
+)
+SELECT
+  p.idproducto,
+  ui.idimagen,                   -- <-- Ahora traemos el id de la imagen
+  p.codigodebarras,
+  p.referencia,
+  MAX(CASE WHEN ppp.tarifa = 'unidad'  THEN ppp.precio END)   AS unidad,
+  MAX(CASE WHEN ppp.tarifa = '3 o más' THEN ppp.precio END)   AS tresomas,
+  MAX(CASE WHEN ppp.tarifa = 'docena'  THEN ppp.precio END)   AS docena,
+  MAX(CASE WHEN ppp.tarifa = 'fardo'   THEN ppp.precio END)   AS fardo,
+  p.nombre
+FROM dbo.PRODUCTOS p
+LEFT JOIN UltimaImagen ui
+  ON ui.idproducto = p.idproducto AND ui.rn = 1
+LEFT JOIN PreciosPorProducto ppp
+  ON ppp.idproducto = p.idproducto
+WHERE
+  p.nombre         LIKE @busq OR
+  p.referencia     LIKE @busq OR
+  p.codigodebarras LIKE @busq
+GROUP BY
+  p.idproducto,
+  ui.idimagen,                   -- <-- y aquí también para el GROUP BY
+  p.codigodebarras,
+  p.referencia,
+  p.nombre
+ORDER BY p.nombre;";
+
+            var dt = new DataTable();
+            using (var conn = new SqlConnection(conexionString))
+            using (var cmd = new SqlCommand(sql, conn))
+            using (var da = new SqlDataAdapter(cmd))
+            {
+                cmd.Parameters.AddWithValue("@busq", $"%{filtro}%");
+                conn.Open();
+                da.Fill(dt);
+            }
+
+            return dt;
+        }
 
 
         public DataTable tiendasempleados(String usuario)
@@ -150,20 +319,39 @@ ORDER BY a.nombre;";
         public DataTable buscarproducto(string buscar)
         {
             const string query = @"
-SELECT 
-  a.idproducto,
-  a.codigodebarras,
-  a.referencia,
-  a.nombre,
-  (SELECT b.precio FROM precios b WHERE b.nombre = 'unidad'   AND b.idproducto = a.idproducto) AS unidad,
-  (SELECT b.precio FROM precios b WHERE b.nombre = '3 o más'  AND b.idproducto = a.idproducto) AS tresomas,
-  (SELECT b.precio FROM precios b WHERE b.nombre = 'docena'   AND b.idproducto = a.idproducto) AS docena,
-  (SELECT b.precio FROM precios b WHERE b.nombre = 'fardo'    AND b.idproducto = a.idproducto) AS fardo
-FROM productos a
-WHERE a.nombre        LIKE @busc
-   OR a.referencia     LIKE @busc
-   OR a.codigodebarras LIKE @busc
-ORDER BY a.nombre;";
+WITH PreciosPorProducto AS (
+  SELECT 
+    e.idproducto,
+    np.nombre      AS tarifa,
+    pr.precio
+  FROM precios pr
+  JOIN existencias e     ON pr.idexistencia    = e.idexistencia
+  JOIN nombresPrecios np ON pr.idnombreprecio  = np.idnombreprecio
+  WHERE pr.activo = 1
+)
+SELECT
+  p.idproducto,
+  p.codigodebarras,
+  p.referencia,
+  MAX(CASE WHEN ppp.tarifa = 'unidad'  THEN ppp.precio END)   AS unidad,
+  MAX(CASE WHEN ppp.tarifa = '3 o más' THEN ppp.precio END)   AS tresomas,
+  MAX(CASE WHEN ppp.tarifa = 'docena'  THEN ppp.precio END)   AS docena,
+  MAX(CASE WHEN ppp.tarifa = 'fardo'   THEN ppp.precio END)   AS fardo,
+  p.nombre
+FROM productos p
+LEFT JOIN PreciosPorProducto ppp ON ppp.idproducto = p.idproducto
+WHERE
+  p.nombre        LIKE @busc OR
+  p.referencia    LIKE @busc OR
+  p.codigodebarras LIKE @busc
+GROUP BY
+  p.idproducto,
+  p.codigodebarras,
+  p.referencia,
+  p.nombre
+ORDER BY p.nombre;";
+
+
             using (var cmd = new SqlCommand(query, conexion))
             {
                 cmd.Parameters.AddWithValue("@busc", $"%{buscar}%");
@@ -432,7 +620,7 @@ ORDER BY a.nombre;";
 
             var t = tableName.Trim().ToUpperInvariant();
 
-            // Solo las tablas que sabemos que tienen idproducto
+            // Validamos las tablas que admiten idproducto
             switch (t)
             {
                 case "ATRIBUTOS":
@@ -441,7 +629,7 @@ ORDER BY a.nombre;";
                 case "DETALLESTRASLADOS":
                 case "DETALLESVENTAS":
                 case "EXISTENCIAS":
-                case "PRECIOS":
+                case "PRECIOS":          // aquí lo interceptamos
                 case "PRECIOSCOMPRAS":
                 case "PRODUCTOS":
                     break;
@@ -449,7 +637,27 @@ ORDER BY a.nombre;";
                     throw new ArgumentException($"Tabla no soportada o sin columna idproducto: {tableName}");
             }
 
-            string sql = $"SELECT * FROM [{t}] WHERE idproducto = @id";
+            // Construimos la consulta según la tabla
+            string sql;
+            if (t == "PRECIOS")
+            {
+                sql = @"
+SELECT 
+    p.idprecio,
+    p.idproducto,
+    np.nombre      AS descripcion,
+    p.precio,
+    np.cantidad,
+    p.activo
+FROM precios p
+LEFT JOIN nombresPrecios np 
+    ON p.idnombreprecio = np.idnombreprecio
+WHERE p.idproducto = @id;";
+            }
+            else
+            {
+                sql = $"SELECT * FROM [{t}] WHERE idproducto = @id;";
+            }
 
             try
             {
@@ -469,6 +677,7 @@ ORDER BY a.nombre;";
                 throw new Exception($"Error en tabla '{t}'. SQL: {sql}. Mensaje SQL: {ex.Message}", ex);
             }
         }
+
 
         public DataRow ObtenerProductoCompleto(int idProducto)
         {
@@ -506,6 +715,8 @@ ORDER BY a.nombre;";
                 return dt.Rows.Count > 0 ? dt.Rows[0] : null;
             }
         }
+
+
 
 
     }

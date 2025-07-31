@@ -1,11 +1,15 @@
 ﻿using System;
+using System.Collections.Generic;
 using System.Configuration;
+using System.Data;
 using System.Data.SqlClient;
 using System.IO;
 using System.Linq;           // para Min()
+using System.Security.Cryptography;
 using System.Text;
 using System.Web.UI;
 using System.Web.UI.WebControls;
+
 
 namespace PandaMay.Productos
 {
@@ -16,14 +20,47 @@ namespace PandaMay.Productos
 
         protected void Page_Load(object sender, EventArgs e)
         {
+            // ——— Traer tarifas para dropdown dinámico (se ejecuta SIEMPRE) ———
+            var listaTarifas = new List<object>();
+            using (var cn = new SqlConnection(_connString))
+            using (var cmd = new SqlCommand(
+                "SELECT idnombreprecio, nombre, cantidad FROM dbo.nombresPrecios WHERE activo = 1", cn))
+            {
+                cn.Open();
+                using (var dr = cmd.ExecuteReader())
+                    while (dr.Read())
+                        listaTarifas.Add(new
+                        {
+                            id = dr.GetInt32(0),
+                            nombre = dr.GetString(1),
+                            cantidad = dr.GetInt32(2)
+                        });
+            }
+            var jsonTarifas = new System.Web.Script.Serialization.JavaScriptSerializer()
+                                   .Serialize(listaTarifas);
+            var script = $@"
+<script type=""text/javascript"">
+  var tarifaData = {jsonTarifas};
+</script>";
+            ClientScript.RegisterClientScriptBlock(
+                this.GetType(),
+                "tarifaData",
+                script,
+                false
+            );
+
+            RegistrarOpcionesMedidas();
+
+
             if (!IsPostBack)
             {
                 CargarListas();
                 CargarCategoriasMaestras();
                 LimpiarCombosCategorias();
-                RegistrarOpcionesMedidas();
+               
             }
         }
+
 
         private void CargarListas()
         {
@@ -328,25 +365,37 @@ VALUES (@c, @s, NULL, 1);", cn, tx))
 
         private void RegistrarOpcionesMedidas()
         {
-            // Genera <option> para MEDIDAS
+            // …generas tu sb con los <option>…
             var sb = new StringBuilder();
             using (var cn = new SqlConnection(_connString))
-            using (var cmd = new SqlCommand("SELECT idmedida,nombre FROM dbo.MEDIDAS ORDER BY nombre", cn))
+            using (var cmd = new SqlCommand(
+                "SELECT idmedida, tipomedida FROM dbo.MEDIDAS WHERE activo = 1 ORDER BY tipomedida",
+                cn))
             {
                 cn.Open();
                 using (var dr = cmd.ExecuteReader())
                     while (dr.Read())
-                        sb.AppendFormat("<option value=\"{0}\">{1}</option>",
-                                        dr["idmedida"], dr["nombre"]);
+                        sb.AppendFormat(
+                          "<option value=\"{0}\">{1}</option>",
+                          dr["idmedida"],
+                          dr["tipomedida"]
+                        );
             }
 
-            // Inyecta en JS
+            // Inyecta en JS sin volver a generar <script> tags
             var script = $@"
 <script type=""text/javascript"">
   var medidasOptions = `{sb}`;
 </script>";
-            ClientScript.RegisterStartupScript(this.GetType(), "medidasTpl", script);
+
+            ClientScript.RegisterStartupScript(
+              this.GetType(),    // tipo de la página
+              "medidasTpl",      // clave única
+              script,            // tu bloque de script
+              false              // <-- aquí
+            );
         }
+
 
         protected void ddlUnidad_SelectedIndexChanged(object s, EventArgs e)
         {
@@ -515,33 +564,25 @@ VALUES (@m, @c, NULL, 1);", cn, tx))
         }
 
         protected void btnGuardarProducto_Click(object s, EventArgs e)
+
         {
+
+
             Page.Validate("prod");
             if (!Page.IsValid) return;
             lblError.Visible = false;
 
-            // Validar dropdowns
+            // —– Validaciones previas idénticas a las tuyas —–
             if (!int.TryParse(ddlUnidad.SelectedValue, out var unidad) || unidad == 0)
-            {
-                MostrarError("Seleccione o cree una unidad válida.");
-                return;
-            }
+            { MostrarError("Seleccione o cree una unidad válida."); return; }
             if (!int.TryParse(ddlMarca.SelectedValue, out var marca) || marca == 0)
-            {
-                MostrarError("Seleccione o cree una marca válida.");
-                return;
-            }
+            { MostrarError("Seleccione o cree una marca válida."); return; }
             if (!int.TryParse(ddlTienda.SelectedValue, out var tienda) || tienda == 0)
-            {
-                MostrarError("Seleccione tienda."); return;
-            }
-            if (!int.TryParse(ddlSubcategoria.SelectedValue, out var sc) || sc == 0) 
-            {
-                MostrarError("Seleccione subcategoría."); return; 
-            }
+            { MostrarError("Seleccione tienda."); return; }
+            if (!int.TryParse(ddlSubcategoria.SelectedValue, out var sc) || sc == 0)
+            { MostrarError("Seleccione subcategoría."); return; }
 
-
-            // Leer campos
+            // Lectura campos…
             var nombre = txtNombre.Text.Trim();
             var referencia = txtReferencia.Text.Trim();
             var cb = long.TryParse(txtCodigoBarras.Text.Trim(), out var tmpCb) ? tmpCb : 0L;
@@ -552,13 +593,11 @@ VALUES (@m, @c, NULL, 1);", cn, tx))
             // Arrays dinámicos
             var tarifas = Request.Form.GetValues("tarifa") ?? new string[0];
             var aplicaEn = Request.Form.GetValues("aplicaEn") ?? new string[0];
-            var cantMin = Request.Form.GetValues("cantMin") ?? new string[0];
             var precioVal = Request.Form.GetValues("precioVal") ?? new string[0];
-            var exColor = Request.Form.GetValues("exColor") ?? new string[0];
             var exMed = Request.Form.GetValues("exMedida") ?? new string[0];
             var exCant = Request.Form.GetValues("exCant") ?? new string[0];
 
-            // Imagen
+            // Buffer para la imagen
             byte[] imgBytes = null;
             if (fuImagen.HasFile)
             {
@@ -569,28 +608,26 @@ VALUES (@m, @c, NULL, 1);", cn, tx))
                 }
             }
 
+            // Y aquí empieza la transacción única:
             using (var cn = new SqlConnection(_connString))
             {
                 cn.Open();
                 using (var tx = cn.BeginTransaction())
                 {
-                    bool committed = false;
                     try
                     {
-                        // 1) PRODUCTOS
+                        // 1) INSERT en PRODUCTOS → newId
                         int newId;
                         using (var cmd = new SqlCommand(@"
 INSERT INTO dbo.PRODUCTOS
- (idsubcategoria,idunidaddemedida,idmarca,nombre,
-  referencia,codigodebarras,activo,tipodeproducto,descuento)
+ (idsubcategoria, idunidaddemedida, nombre,
+  referencia, codigodebarras, activo, tipodeproducto, descuento)
  OUTPUT INSERTED.idproducto
  VALUES
- (@sub,@uni,@mar,@nom,
-  @ref,@cb,@act,@tip,@des)", cn, tx))
+ (@sub, @uni, @nom, @ref, @cb, @act, @tip, @des);", cn, tx))
                         {
                             cmd.Parameters.AddWithValue("@sub", sc > 0 ? (object)sc : DBNull.Value);
                             cmd.Parameters.AddWithValue("@uni", unidad);
-                            cmd.Parameters.AddWithValue("@mar", marca);
                             cmd.Parameters.AddWithValue("@nom", nombre);
                             cmd.Parameters.AddWithValue("@ref", referencia);
                             cmd.Parameters.AddWithValue("@cb", cb);
@@ -600,113 +637,160 @@ INSERT INTO dbo.PRODUCTOS
                             newId = (int)cmd.ExecuteScalar();
                         }
 
-                        // 2) PRECIOS (Evita IndexOutOfRange)
-                        int precioCount = new[] { tarifas.Length, aplicaEn.Length, cantMin.Length, precioVal.Length }.Min();
-                        using (var cmd2 = new SqlCommand(@"
-INSERT INTO dbo.PRECIOS
- (idproducto,nombre,descripcion,precio,cantidad,activo)
- VALUES
- (@id,@nom,@desc,@pre,@cant,1)", cn, tx))
-                        {
-                            for (int i = 0; i < precioCount; i++)
-                            {
-                                cmd2.Parameters.Clear();
-                                cmd2.Parameters.AddWithValue("@id", newId);
-                                cmd2.Parameters.AddWithValue("@nom", tarifas[i]);
-                                cmd2.Parameters.AddWithValue("@desc", aplicaEn[i]);
-                                cmd2.Parameters.AddWithValue("@pre", decimal.Parse(precioVal[i]));
-                                cmd2.Parameters.AddWithValue("@cant", int.Parse(cantMin[i]));
-                                cmd2.ExecuteNonQuery();
-                            }
-                        }
+                        // 2) INSERT en EXISTENCIAS → existenciasIds[]
+                        var existenciasIds = new List<int>();
+                        // Ahora sólo usamos exMed y exCant
+                        int existCount = Math.Min(exMed.Length, exCant.Length);
 
-                        // 3) EXISTENCIAS (Evita IndexOutOfRange)
-                        int existCount = new[] { exColor.Length, exMed.Length, exCant.Length }.Min();
                         for (int i = 0; i < existCount; i++)
                         {
-                            // colorId lookup
-                            int colorId;
-                            if (!int.TryParse(exColor[i], out colorId))
-                            {
-                                using (var lc = new SqlCommand(
-                                    "SELECT idcolor FROM dbo.COLORES WHERE nombre=@n", cn, tx))
-                                {
-                                    lc.Parameters.AddWithValue("@n", exColor[i]);
-                                    var o = lc.ExecuteScalar();
-                                    colorId = o != null ? Convert.ToInt32(o) : 0;
-                                }
-                            }
-
-                            // medId (dropdown)
                             int medId = int.Parse(exMed[i]);
+                            int cantidad = int.Parse(exCant[i]);
 
                             using (var cmd3 = new SqlCommand(@"
 INSERT INTO dbo.EXISTENCIAS
- (idtienda,idproducto,idcolor,idmedida,cantidad)
+  (idtienda, idproducto, idmarca, idmedida, cantidad)
+ OUTPUT INSERTED.idexistencia
  VALUES
- (@tid,@id,@col,@med,@can)", cn, tx))
+  (@tid, @pid, @mar, @med, @can);", cn, tx))
                             {
-                                cmd3.Parameters.AddWithValue("@tid", int.Parse(ddlTienda.SelectedValue));
-                                cmd3.Parameters.AddWithValue("@id", newId);
-                                cmd3.Parameters.AddWithValue("@col", colorId > 0 ? (object)colorId : DBNull.Value);
+                                cmd3.Parameters.AddWithValue("@tid", tienda);
+                                cmd3.Parameters.AddWithValue("@pid", newId);
+                                cmd3.Parameters.AddWithValue("@mar", marca);
                                 cmd3.Parameters.AddWithValue("@med", medId);
-                                cmd3.Parameters.AddWithValue("@can", int.Parse(exCant[i]));
-                                cmd3.ExecuteNonQuery();
+                                cmd3.Parameters.AddWithValue("@can", cantidad);
+                                existenciasIds.Add((int)cmd3.ExecuteScalar());
+                            }
+
+                        }
+
+
+                        // 3) INSERT en PRECIOS — ahora todas las tarifas en la misma existencia
+                        const string sqlPrecios = @"
+INSERT INTO dbo.PRECIOS
+  (idexistencia, idnombreprecio, descripcion, precio, activo, fecha)
+VALUES
+  (@idexistencia, @idnombreprecio, @descripcion, @precio, 1, GETDATE());";
+
+                        if (existenciasIds.Count > 0)
+                        {
+                            int existenciaPrincipal = existenciasIds[0];      // usamos la primera existencia
+
+                            using (var cmdPrecio = new SqlCommand(sqlPrecios, cn, tx))
+                            {
+                                // Recorremos todas las tarifas capturadas del formulario
+                                for (int i = 0; i < tarifas.Length; i++)
+                                {
+                                    if (!int.TryParse(tarifas[i], out int idNomPre) || idNomPre <= 0)
+                                        continue;
+
+                                    // limpia parámetros de la iteración anterior
+                                    cmdPrecio.Parameters.Clear();
+
+                                    cmdPrecio.Parameters.AddWithValue("@idexistencia", existenciaPrincipal);
+                                    cmdPrecio.Parameters.AddWithValue("@idnombreprecio", idNomPre);
+                                    cmdPrecio.Parameters.AddWithValue("@descripcion", aplicaEn[i]);
+                                    cmdPrecio.Parameters.AddWithValue("@precio", decimal.Parse(precioVal[i]));
+
+                                    cmdPrecio.ExecuteNonQuery();
+                                }
                             }
                         }
 
 
-                        // 4) IMÁGENES
+                        // 4) INSERT en IMAGENES y UPDATE EXISTENCIAS
                         if (imgBytes != null && imgBytes.Length > 0)
                         {
-                            using (var cmd4 = new SqlCommand(@"
+                            // 4.1) Insertar imagen
+                            int newImageId;
+                            using (var cmdImg = new SqlCommand(@"
 INSERT INTO dbo.IMAGENES
-    (idproducto, idcolor, foto, descripcion, activo, fecha)
+  (idcolor, foto, descripcion, activo, fecha)
 VALUES
-    (@pid,       @col,    @bin, @desc,       1,     GETDATE());", cn, tx))
+  (@col, @bin, @desc, 1, GETDATE());
+SELECT CAST(SCOPE_IDENTITY() AS INT);", cn, tx))
                             {
-                                // 1) id del producto recién creado
-                                cmd4.Parameters.Add("@pid", System.Data.SqlDbType.Int).Value = newId;
+                                int selectedColor = int.TryParse(ddlImgColor.SelectedValue, out var tmpC) ? tmpC : 0;
+                                cmdImg.Parameters.AddWithValue("@col", selectedColor > 0 ? (object)selectedColor : DBNull.Value);
+                                cmdImg.Parameters.Add("@bin", SqlDbType.VarBinary, imgBytes.Length).Value = imgBytes;
+                                cmdImg.Parameters.AddWithValue("@desc", string.IsNullOrEmpty(txtImgDesc.Text)
+                                                                     ? (object)DBNull.Value
+                                                                     : txtImgDesc.Text.Trim());
+                                newImageId = (int)cmdImg.ExecuteScalar();
+                            }
 
-                                // 2) Color seleccionado (o NULL)
-                                if (int.TryParse(ddlImgColor.SelectedValue, out var ic) && ic > 0)
-                                    cmd4.Parameters.Add("@col", System.Data.SqlDbType.Int).Value = ic;
-                                else
-                                    cmd4.Parameters.Add("@col", System.Data.SqlDbType.Int).Value = DBNull.Value;
-
-                                // 3) Imagen binaria
-                                cmd4.Parameters.Add("@bin", System.Data.SqlDbType.VarBinary, imgBytes.Length).Value = imgBytes;
-
-                                // 4) Descripción (puede ser NULL)
-                                var desc = txtImgDesc.Text?.Trim();
-                                cmd4.Parameters.Add("@desc", System.Data.SqlDbType.NVarChar, 200).Value =
-                                    string.IsNullOrEmpty(desc) ? (object)DBNull.Value : desc;
-
-                                cmd4.ExecuteNonQuery();
+                            // 4.2) Asociar a la última existencia
+                            if (existenciasIds.Count > 0)
+                            {
+                                int ultima = existenciasIds.Last();
+                                using (var cmdUpd = new SqlCommand(@"
+UPDATE dbo.EXISTENCIAS
+  SET idimagen = @img
+ WHERE idexistencia = @eid;", cn, tx))
+                                {
+                                    cmdUpd.Parameters.AddWithValue("@img", newImageId);
+                                    cmdUpd.Parameters.AddWithValue("@eid", ultima);
+                                    cmdUpd.ExecuteNonQuery();
+                                }
                             }
                         }
 
-
-
+                        // 5) ¡Todo OK! confirmamos y salimos
                         tx.Commit();
-                        committed = true;
                         Response.Redirect("Productos.aspx");
                     }
                     catch (Exception ex)
                     {
-                        if (!committed)
-                            try { tx.Rollback(); } catch { }
-                        MostrarError("Ocurrió un error: " + ex.Message);
+                        // Solo intentamos rollback si sigue abierta la conexión
+                        try
+                        {
+                            if (tx != null && tx.Connection != null && tx.Connection.State == ConnectionState.Open)
+                                tx.Rollback();
+                        }
+                        catch
+                        {
+                            // ya estaba completada, lo ignoramos
+                        }
+
+                        MostrarError("Ocurrió un error al guardar: " + ex.Message);
                     }
                 }
             }
         }
+
+
 
         private void MostrarError(string msg)
         {
             lblError.Text = msg;
             lblError.Visible = true;
         }
+
+
+     
+
+        // Guarda la nueva tarifa y recarga la página
+        protected void btnGuardarTarifa_Click(object sender, EventArgs e)
+        {
+            var nombre = txtTarifaNombre.Text.Trim();
+            if (!int.TryParse(txtTarifaCantidad.Text, out var cantidad))
+                return;  // podrías validar y mostrar error aquí
+
+            using (var cn = new SqlConnection(_connString))
+            using (var cmd = new SqlCommand(@"
+        INSERT INTO dbo.nombresPrecios (nombre, cantidad, activo, fecha)
+        VALUES (@n, @c, 1, GETDATE())", cn))
+            {
+                cmd.Parameters.AddWithValue("@n", nombre);
+                cmd.Parameters.AddWithValue("@c", cantidad);
+                cn.Open();
+                cmd.ExecuteNonQuery();
+            }
+
+            // Refresca la página para recargar tarifaData
+            Response.Redirect(Request.RawUrl);
+        }
+
     }
 }
 

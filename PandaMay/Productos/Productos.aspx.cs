@@ -1,19 +1,21 @@
-﻿using PandaMay;  // Ajusta al namespace donde esté tu clase Conectar
+﻿using PandaMay;  // Ajusta al namespace de tu clase Conectar
 using System;
 using System.Data;
-using System.Data.SqlClient;
+using System.Linq;
+using System.Text;
 using System.Web.UI;
 using System.Web.UI.WebControls;
+
 
 namespace PandaMay.Productos
 {
     public partial class Productos : Page
     {
-        Conectar conectado = new Conectar();
+        // Instancia a tu helper de datos
+        private readonly Conectar conectado = new Conectar();
 
         protected void Page_Load(object sender, EventArgs e)
         {
-           
             if (Session["usuario"] == null)
                 Response.Redirect("~/Login.aspx");
 
@@ -24,37 +26,39 @@ namespace PandaMay.Productos
             }
         }
 
-
-        // Método auxiliar para bindear el grid principal
+        /// <summary>
+        /// Carga el grid principal invocando al nuevo método que retorna productos + tarifas pivotadas.
+        /// </summary>
         private void CargarProductos(string filtro = "")
         {
             conectado.conectar();
-            if (String.IsNullOrEmpty(filtro))
-                GridView1.DataSource = conectado.productos();
-            else
-                GridView1.DataSource = conectado.buscarproducto(filtro);
+
+            DataTable dt = string.IsNullOrEmpty(filtro)
+                ? conectado.GetProductosConTarifas()
+                : conectado.BuscarProductosConTarifas(filtro);
+
+            GridView1.DataSource = dt;
             GridView1.DataBind();
+
             conectado.desconectar();
         }
 
-        // Búsqueda en vivo
+
+
+
         protected void txtBuscar_TextChanged(object sender, EventArgs e)
-        {
-            CargarProductos(txtBuscar.Text.Trim());
-        }
+            => CargarProductos(txtBuscar.Text.Trim());
 
-        // Redirigir a CrearProducto.aspx
         protected void btnCrearProducto_Click(object sender, EventArgs e)
-        {
-            Response.Redirect("CrearProducto.aspx");
-        }
+            => Response.Redirect("CrearProducto.aspx");
 
-        // Al seleccionar un producto, cargamos los grids de detalle
+
+        /// <summary>
+        /// Cuando el usuario selecciona una fila, cargamos todos los detalles del producto.
+        /// </summary>
         protected void Select1(object sender, GridViewSelectEventArgs e)
         {
             int idProducto = Convert.ToInt32(GridView1.DataKeys[e.NewSelectedIndex].Value);
-
-            // NUEVO BLOQUE INSERTADO
             var datos = conectado.ObtenerProductoCompleto(idProducto);
             if (datos != null)
             {
@@ -70,7 +74,7 @@ namespace PandaMay.Productos
                 lblTipo.Text = datos["tipodeproducto"].ToString();
                 chkActivo.Checked = Convert.ToBoolean(datos["activo"]);
 
-                imgFotoDetalle.ImageUrl = "~/VerImagen.ashx?id=" + idProducto + "&detalle=1&t=" + DateTime.Now.Ticks;
+                imgFotoDetalle.ImageUrl = $"~/VerImagen.ashx?id={idProducto}&detalle=1&t={DateTime.Now.Ticks}";
             }
 
             pnlDetalles.Visible = true;
@@ -97,37 +101,56 @@ namespace PandaMay.Productos
             conectado.desconectar();
         }
 
-
-        protected string GetFotoUrl(object foto)
+        protected string GetPreciosHtml(object dataItem)
         {
-            if (foto == DBNull.Value)
-                return ResolveUrl("~/images/no-image.png");
+            var row = (DataRowView)dataItem;
+            var sb = new StringBuilder();
 
-            // Si viene un byte[], lo convertimos a Base64 con mime WebP
-            if (foto is byte[] bytes)
-                return "data:image/webp;base64,"
-                     + Convert.ToBase64String(bytes);
+            // Recorro sólo las columnas que usaste en el pivot
+            foreach (string tarifa in new[] { "unidad", "tresomas", "docena", "fardo" })
+            {
+                if (row.DataView.Table.Columns.Contains(tarifa))
+                {
+                    var val = row[tarifa];
+                    if (val != DBNull.Value)
+                        sb.AppendFormat("<div><strong>{0}:</strong> {1:C}</div>",
+                                        tarifa, Convert.ToDecimal(val));
+                }
+            }
 
-            // Si fuera string (ruta), lo resolvemos normalmente
-            return ResolveUrl(foto.ToString());
+            return sb.ToString();
         }
+
+
+        /// <summary>
+        /// Helper para mostrar la foto en el grid principal.
+        /// </summary>
 
         protected void GridView1_RowDataBound(object sender, GridViewRowEventArgs e)
         {
+            // 1) Sólo filas de datos
             if (e.Row.RowType != DataControlRowType.DataRow) return;
 
+            // 2) Obtenemos el idimagen de la fila
             var drv = (DataRowView)e.Row.DataItem;
-            int idProd = Convert.ToInt32(drv["idproducto"]);
+            int idImg = drv["idimagen"] != DBNull.Value
+                ? Convert.ToInt32(drv["idimagen"])
+                : 0;
 
+            // 3) Localizamos el <asp:Image ID="imgFoto">
             var img = (Image)e.Row.FindControl("imgFoto");
-            if (img != null)
-            {
-                img.ImageUrl = ResolveUrl("~/VerImagen.ashx?id=" + idProd + "&t=" + DateTime.Now.Ticks);
-            }
+            if (img == null) return;
+
+            // 4) Le asignamos la URL al handler
+            if (idImg > 0)
+                img.ImageUrl = $"~/VerImagen.ashx?imgid={idImg}&t={DateTime.Now.Ticks}";
+            else
+                img.ImageUrl = ResolveUrl("~/uploads/productos/aretes.png");
         }
 
 
+
+
+
     }
-
-
 }
