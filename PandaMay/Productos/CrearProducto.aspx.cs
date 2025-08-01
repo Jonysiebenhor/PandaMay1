@@ -95,7 +95,8 @@ namespace PandaMay.Productos
                 ddlMarca.Items.Clear();
                 ddlMarca.Items.Add(new ListItem("-- Marca --", ""));
                 using (var cmd4 = new SqlCommand(
-                    "SELECT idmarca,nombre FROM dbo.MARCAS WHERE activo=1", cn))
+    "SELECT idmarca,nombre FROM dbo.MARCAS ORDER BY nombre", cn))
+
                 using (var dr4 = cmd4.ExecuteReader())
                     while (dr4.Read())
                         ddlMarca.Items.Add(new ListItem(

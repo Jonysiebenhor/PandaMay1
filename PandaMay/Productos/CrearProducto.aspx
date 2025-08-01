@@ -127,12 +127,19 @@
         </asp:Panel>
       </div>
 
-      <!-- Marca -->
+      <%-- Marca --%>
       <div class="field-group">
         <label>Marca:</label>
-        <asp:DropDownList ID="ddlMarca" runat="server" CssClass="form-control"
-            AutoPostBack="true" CausesValidation="false"
-            OnSelectedIndexChanged="ddlMarca_SelectedIndexChanged" />
+       <asp:DropDownList ID="ddlMarca" runat="server" CssClass="form-control"
+    AppendDataBoundItems="true"
+    AutoPostBack="true" CausesValidation="false"
+    OnSelectedIndexChanged="ddlMarca_SelectedIndexChanged">
+  <%-- ítem por defecto --%>
+  <asp:ListItem Text="-- Marca --" Value="" />
+  <%-- opción para agregar una nueva --%>
+  <asp:ListItem Text="-- Agregar nueva marca --" Value="-1" />
+</asp:DropDownList>
+
         <asp:RequiredFieldValidator ID="rfvMarca" runat="server"
             ControlToValidate="ddlMarca" InitialValue=""
             ErrorMessage="* Requerido" Display="Dynamic" ValidationGroup="prod"

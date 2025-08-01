@@ -570,6 +570,29 @@ ORDER BY p.nombre;";
             returnVal.Fill(dt);
             return dt;
         }
+
+        /// <summary>
+        /// Devuelve todas las marcas activas ordenadas por nombre
+        /// </summary>
+        public DataTable GetMarcas()
+        {
+            const string sql = @"
+SELECT idmarca, nombre
+  FROM dbo.MARCAS
+ WHERE activo = 1   -- o quita esta línea si no usas 'activo'
+ ORDER BY nombre;
+";
+            var dt = new DataTable();
+            using (var cn = new SqlConnection(conexionString))
+            using (var cmd = new SqlCommand(sql, cn))
+            using (var da = new SqlDataAdapter(cmd))
+            {
+                cn.Open();
+                da.Fill(dt);
+            }
+            return dt;
+        }
+
         public DataTable pais(String iddepartamento)
         {
             String query = "Select *  from departamentos where iddepartamento ='" + iddepartamento + "'";
@@ -620,7 +643,6 @@ ORDER BY p.nombre;";
 
             var t = tableName.Trim().ToUpperInvariant();
 
-            // Validamos las tablas que admiten idproducto
             switch (t)
             {
                 case "ATRIBUTOS":
@@ -629,7 +651,7 @@ ORDER BY p.nombre;";
                 case "DETALLESTRASLADOS":
                 case "DETALLESVENTAS":
                 case "EXISTENCIAS":
-                case "PRECIOS":          // aquí lo interceptamos
+                case "PRECIOS":
                 case "PRECIOSCOMPRAS":
                 case "PRODUCTOS":
                     break;
@@ -637,26 +659,50 @@ ORDER BY p.nombre;";
                     throw new ArgumentException($"Tabla no soportada o sin columna idproducto: {tableName}");
             }
 
-            // Construimos la consulta según la tabla
             string sql;
+
             if (t == "PRECIOS")
             {
                 sql = @"
 SELECT 
     p.idprecio,
-    p.idproducto,
-    np.nombre      AS descripcion,
+    e.idproducto,
+    np.nombre AS descripcion,
     p.precio,
     np.cantidad,
     p.activo
-FROM precios p
-LEFT JOIN nombresPrecios np 
-    ON p.idnombreprecio = np.idnombreprecio
-WHERE p.idproducto = @id;";
+FROM dbo.PRECIOS p
+LEFT JOIN dbo.EXISTENCIAS e
+  ON p.idexistencia = e.idexistencia
+LEFT JOIN dbo.nombresPrecios np
+  ON p.idnombreprecio = np.idnombreprecio
+WHERE e.idproducto = @id;";
+            }
+            else if (t == "PRECIOSCOMPRAS")
+            {
+                sql = @"
+SELECT
+    p.idpreciocompra,
+    e.idproducto,
+    p.descripcion,
+    p.precio,
+    p.activo,
+    p.fecha
+FROM dbo.PRECIOSCOMPRAS p
+LEFT JOIN dbo.EXISTENCIAS e
+  ON p.idexistencia = e.idexistencia
+WHERE e.idproducto = @id;";
+            }
+            else if (t == "ATRIBUTOS")
+            {
+                // Opción B: devolvemos vacio porque no existe esa tabla
+                return new DataTable();
             }
             else
             {
-                sql = $"SELECT * FROM [{t}] WHERE idproducto = @id;";
+                // COMBOSPRODUCTOS, DETALLESCOMPRAS, DETALLESTRASLADOS, DETALLESVENTAS,
+                // EXISTENCIAS o PRODUCTOS
+                sql = $"SELECT * FROM dbo.[{t}] WHERE idproducto = @id;";
             }
 
             try
@@ -688,23 +734,54 @@ WHERE p.idproducto = @id;";
                 cn.Open();
 
                 SqlCommand cmd = new SqlCommand(@"
-            SELECT 
-                p.idproducto, p.nombre, p.referencia, p.codigodebarras,
-                p.tipodeproducto, p.descuento, p.activo,
-                u.nombre AS unidad,
-                m.nombre AS marca,
-                s.nombre AS subcategoria,
-                c.nombre AS categoria,
-                cm.nombre AS categoriamaestra
-            FROM PRODUCTOS p
-            LEFT JOIN UNIDADDEMEDIDAS u ON u.idunidaddemedida = p.idunidaddemedida
-            LEFT JOIN MARCAS m ON m.idmarca = p.idmarca
-            LEFT JOIN SUBCATEGORIAS s ON s.idsubcategoria = p.idsubcategoria
-            LEFT JOIN CATEGORIASSUBCATEGORIAS cs ON cs.idsubcategoria = s.idsubcategoria
-            LEFT JOIN CATEGORIAS c ON c.idcategoria = cs.idcategoria
-            LEFT JOIN CATEGORIASMAESTRASCATEGORIAS cmc ON cmc.idcategoria = c.idcategoria
-            LEFT JOIN CATEGORIASMAESTRAS cm ON cm.idcategoriamaestra = cmc.idcategoriamaestra
-            WHERE p.idproducto = @id", cn);
+WITH UltimaExistencia AS (
+  SELECT 
+    idproducto,
+    idmarca,
+    ROW_NUMBER() OVER(
+      PARTITION BY idproducto
+      ORDER BY fechaingreso DESC, idexistencia DESC
+    ) AS rn
+  FROM dbo.EXISTENCIAS
+)
+SELECT 
+  p.idproducto,
+  p.nombre,
+  p.referencia,
+  p.codigodebarras,
+  p.tipodeproducto,
+  p.descuento,
+  p.activo,
+  u.nombre  AS unidad,
+  m.nombre  AS marca,              -- ahora sí viene de la existencia
+  s.nombre  AS subcategoria,
+  c.nombre  AS categoria,
+  cm.nombre AS categoriamaestra
+FROM dbo.PRODUCTOS p
+LEFT JOIN dbo.UNIDADDEMEDIDAS u 
+  ON u.idunidaddemedida = p.idunidaddemedida
+
+LEFT JOIN UltimaExistencia ue
+  ON ue.idproducto = p.idproducto 
+ AND ue.rn = 1
+
+LEFT JOIN dbo.MARCAS m
+  ON m.idmarca = ue.idmarca        -- reemplaza p.idmarca
+
+LEFT JOIN dbo.SUBCATEGORIAS s 
+  ON s.idsubcategoria = p.idsubcategoria
+LEFT JOIN dbo.CATEGORIASSUBCATEGORIAS cs 
+  ON cs.idsubcategoria = s.idsubcategoria
+LEFT JOIN dbo.CATEGORIAS c 
+  ON c.idcategoria = cs.idcategoria
+LEFT JOIN dbo.CATEGORIASMAESTRASCATEGORIAS cmc 
+  ON cmc.idcategoria = c.idcategoria
+LEFT JOIN dbo.CATEGORIASMAESTRAS cm 
+  ON cm.idcategoriamaestra = cmc.idcategoriamaestra
+
+WHERE p.idproducto = @id;
+", cn);
+
 
                 cmd.Parameters.AddWithValue("@id", idProducto);
 
