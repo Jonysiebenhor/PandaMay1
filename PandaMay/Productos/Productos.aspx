@@ -156,8 +156,25 @@
               GridLines="Both" BorderColor="#ccc" BorderWidth="1px" Width="100%" />
           </div>
           <div style="overflow-x:auto;">
-            <asp:GridView ID="gvExistencias" runat="server" AutoGenerateColumns="true"
-              GridLines="Both" BorderColor="#ccc" BorderWidth="1px" Width="100%" />
+           <asp:GridView 
+    ID="gvExistencias" 
+    runat="server" 
+    AutoGenerateColumns="false"
+    CssClass="tabla-precios"
+    GridLines="Both" 
+    BorderColor="#ccc" 
+    BorderWidth="1px" 
+    Width="100%">
+  <Columns>
+    <asp:BoundField DataField="idexistencia" HeaderText="ID Existencia" />
+    <asp:BoundField DataField="Color"       HeaderText="Color" />
+    <asp:BoundField DataField="Publico"     HeaderText="Público" />
+    <asp:BoundField DataField="Medida"      HeaderText="Medida" />
+    <asp:BoundField DataField="cantidad"    HeaderText="Cantidad" />
+  </Columns>
+</asp:GridView>
+
+
           </div>
         </asp:Panel>
       </div>

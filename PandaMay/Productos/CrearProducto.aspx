@@ -183,6 +183,32 @@
         <label>Tipo de producto:</label>
         <asp:TextBox ID="txtTipo" runat="server" CssClass="form-control" />
       </div>
+
+        <!-- Nuevo: Tipo de públicos -->
+  <div class="field-group">
+    <label>Tipo de públicos:</label>
+    <asp:DropDownList ID="ddlPublico" runat="server" CssClass="form-control">
+      <asp:ListItem Text="-- Seleccione público --" Value="" />
+      <asp:ListItem Text="Adulto"         Value="1" />
+      <asp:ListItem Text="Niñ@s"          Value="2" />
+      <asp:ListItem Text="Niño"           Value="3" />
+      <asp:ListItem Text="Niña"           Value="4" />
+      <asp:ListItem Text="Infantes"       Value="5" />
+      <asp:ListItem Text="Mayor de edad"  Value="6" />
+      <asp:ListItem Text="Todos"          Value="7" />
+    </asp:DropDownList>
+    <asp:RequiredFieldValidator 
+        ID="rfvPublico" 
+        runat="server"
+        ControlToValidate="ddlPublico"
+        InitialValue=""
+        ErrorMessage="* Requerido"
+        Display="Dynamic" 
+        ValidationGroup="prod" 
+        CssClass="validator" />
+  </div>
+
+
       <div class="field-group">
         <label>Descuento (%):</label>
         <asp:TextBox ID="txtDescuento" runat="server" CssClass="form-control" />

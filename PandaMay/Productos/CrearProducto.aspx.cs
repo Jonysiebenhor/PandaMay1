@@ -57,7 +57,8 @@ namespace PandaMay.Productos
                 CargarListas();
                 CargarCategoriasMaestras();
                 LimpiarCombosCategorias();
-               
+                CargarPublicos();
+
             }
         }
 
@@ -116,6 +117,30 @@ namespace PandaMay.Productos
                             dr5["idcolor"].ToString()));
             }
         }
+
+
+        /// <summary>
+        /// Carga los públicos desde la tabla PUBLICOS en el dropdown ddlPublico.
+        /// </summary>
+        private void CargarPublicos()
+        {
+            ddlPublico.Items.Clear();
+            ddlPublico.Items.Add(new ListItem("-- Seleccione público --", ""));
+            using (var cn = new SqlConnection(_connString))
+            using (var cmd = new SqlCommand(
+    "SELECT idpublico, nombre FROM dbo.PUBLICOS ORDER BY nombre", cn))
+
+            {
+                cn.Open();
+                using (var dr = cmd.ExecuteReader())
+                    while (dr.Read())
+                        ddlPublico.Items.Add(new ListItem(
+                            dr.GetString(1),
+                            dr.GetInt32(0).ToString()
+                        ));
+            }
+        }
+
 
         // Recarga SOLO la lista de unidades y deja seleccionada la recién creada
         private void RecargarUnidadesSeleccionando(int idNew)
@@ -582,6 +607,13 @@ VALUES (@m, @c, NULL, 1);", cn, tx))
             { MostrarError("Seleccione tienda."); return; }
             if (!int.TryParse(ddlSubcategoria.SelectedValue, out var sc) || sc == 0)
             { MostrarError("Seleccione subcategoría."); return; }
+            // Validar que el usuario eligió un público
+            if (!int.TryParse(ddlPublico.SelectedValue, out var idPublico) || idPublico == 0)
+            {
+                MostrarError("Seleccione un tipo de público válido.");
+                return;
+            }
+
 
             // Lectura campos…
             var nombre = txtNombre.Text.Trim();
@@ -663,6 +695,20 @@ INSERT INTO dbo.EXISTENCIAS
                                 existenciasIds.Add((int)cmd3.ExecuteScalar());
                             }
 
+                        }
+                        //  Asociar cada existencia con el público seleccionado
+                        foreach (var existenciaId in existenciasIds)
+                        {
+                            using (var cmdPub = new SqlCommand(@"
+INSERT INTO dbo.EXISTENCIASPUBLICOS
+  (idexistencia, idpublico, activo)
+VALUES
+  (@eid, @pub, 1);", cn, tx))
+                            {
+                                cmdPub.Parameters.AddWithValue("@eid", existenciaId);
+                                cmdPub.Parameters.AddWithValue("@pub", idPublico);
+                                cmdPub.ExecuteNonQuery();
+                            }
                         }
 
 

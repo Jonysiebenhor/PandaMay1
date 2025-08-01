@@ -87,7 +87,7 @@ namespace PandaMay.Productos
             gvPrecios.DataSource = conectado.GetByProducto("PRECIOS", idProducto);
             gvPreciosCompras.DataSource = conectado.GetByProducto("PRECIOSCOMPRAS", idProducto);
             gvAtributos.DataSource = conectado.GetByProducto("ATRIBUTOS", idProducto);
-            gvExistencias.DataSource = conectado.GetByProducto("EXISTENCIAS", idProducto);
+            gvExistencias.DataSource = conectado.GetExistenciasConColorYPublico(idProducto);
 
             gvCombosProductos.DataBind();
             gvDetallesCompras.DataBind();

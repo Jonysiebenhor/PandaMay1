@@ -113,16 +113,31 @@ namespace PandaMay
         public DataTable Productos()
         {
             const string query = @"
-WITH UltimaImagen AS (
+WITH UltimaExistencia AS (
+    -- Para cada producto, la existencia más reciente
     SELECT
       idproducto,
-      idimagen,
+      idexistencia,
       ROW_NUMBER() OVER(
         PARTITION BY idproducto
         ORDER BY fechaingreso DESC, idexistencia DESC
       ) AS rn
     FROM dbo.EXISTENCIAS
-    WHERE idimagen IS NOT NULL
+),
+UltimaImagen AS (
+    -- Igual que antes, pero filtrada a la existencia más reciente
+    SELECT
+      e.idproducto,
+      e.idexistencia,
+      ex.idimagen,
+      ROW_NUMBER() OVER(
+        PARTITION BY e.idproducto
+        ORDER BY ex.fechaingreso DESC, ex.idexistencia DESC
+      ) AS rn
+    FROM dbo.EXISTENCIAS ex
+    JOIN UltimaExistencia e
+      ON ex.idproducto = e.idproducto AND ex.idexistencia = e.idexistencia
+    WHERE ex.idimagen IS NOT NULL
 ),
 PreciosPorProducto AS (
     SELECT 
@@ -133,29 +148,43 @@ PreciosPorProducto AS (
     JOIN dbo.EXISTENCIAS e     ON pr.idexistencia   = e.idexistencia
     JOIN dbo.nombresPrecios np ON pr.idnombreprecio = np.idnombreprecio
     WHERE pr.activo = 1
+),
+ExistenciaPublico AS (
+    SELECT
+      ep.idexistencia,
+      p.nombre AS Publico
+    FROM dbo.EXISTENCIASPUBLICOS ep
+    JOIN dbo.PUBLICOS p
+      ON ep.idpublico = p.idpublico
+    WHERE ep.activo = 1
 )
 SELECT
   p.idproducto,
-  ui.idimagen,                   -- <-- lo agregamos aquí
+  ui.idimagen,
   p.codigodebarras,
   p.referencia,
-  MAX(CASE WHEN ppp.tarifa = 'unidad'  THEN ppp.precio END)   AS unidad,
-  MAX(CASE WHEN ppp.tarifa = '3 o más' THEN ppp.precio END)   AS tresomas,
-  MAX(CASE WHEN ppp.tarifa = 'docena'  THEN ppp.precio END)   AS docena,
-  MAX(CASE WHEN ppp.tarifa = 'fardo'   THEN ppp.precio END)   AS fardo,
-  p.nombre
+  MAX(CASE WHEN pr.tarifa = 'unidad'  THEN pr.precio END)   AS unidad,
+  MAX(CASE WHEN pr.tarifa = '3 o más' THEN pr.precio END)   AS tresomas,
+  MAX(CASE WHEN pr.tarifa = 'docena'  THEN pr.precio END)   AS docena,
+  MAX(CASE WHEN pr.tarifa = 'fardo'   THEN pr.precio END)   AS fardo,
+  p.nombre,
+  pub.Publico
 FROM dbo.PRODUCTOS p
 LEFT JOIN UltimaImagen ui
   ON ui.idproducto = p.idproducto AND ui.rn = 1
-LEFT JOIN PreciosPorProducto ppp
-  ON ppp.idproducto = p.idproducto
+LEFT JOIN PreciosPorProducto pr
+  ON pr.idproducto = p.idproducto
+LEFT JOIN ExistenciaPublico pub
+  ON pub.idexistencia = ui.idexistencia
 GROUP BY
   p.idproducto,
-  ui.idimagen,                   -- <-- y también en el GROUP BY
+  ui.idimagen,
   p.codigodebarras,
   p.referencia,
-  p.nombre
-ORDER BY p.nombre;";
+  p.nombre,
+  pub.Publico
+ORDER BY p.nombre;
+";
 
             var dt = new DataTable();
             using (var conn = new SqlConnection(conexionString))
@@ -167,6 +196,7 @@ ORDER BY p.nombre;";
             }
             return dt;
         }
+
 
 
 
@@ -724,6 +754,44 @@ WHERE e.idproducto = @id;";
             }
         }
 
+        /// <summary>
+        /// Trae las existencias de un producto con su color e público asociado.
+        /// </summary>
+        public DataTable GetExistenciasConColorYPublico(int idProducto)
+        {
+            const string sql = @"
+SELECT 
+  e.idexistencia,
+  COALESCE(c.nombre, '')   AS Color,
+  COALESCE(pub.nombre, '') AS Publico,
+  m.tipomedida             AS Medida,
+  e.cantidad
+FROM dbo.EXISTENCIAS e
+LEFT JOIN dbo.MEDIDAS m 
+  ON m.idmedida = e.idmedida
+LEFT JOIN dbo.IMAGENES img 
+  ON img.idimagen = e.idimagen
+LEFT JOIN dbo.COLORES c 
+  ON c.idcolor = img.idcolor
+LEFT JOIN dbo.EXISTENCIASPUBLICOS ep 
+  ON ep.idexistencia = e.idexistencia AND ep.activo = 1
+LEFT JOIN dbo.PUBLICOS pub 
+  ON pub.idpublico = ep.idpublico
+WHERE e.idproducto = @idProducto
+ORDER BY e.idexistencia;";
+
+            var dt = new DataTable();
+            using (var cn = new SqlConnection(conexionString))
+            using (var cmd = new SqlCommand(sql, cn))
+            {
+                cmd.Parameters.AddWithValue("@idProducto", idProducto);
+                using (var da = new SqlDataAdapter(cmd))
+                {
+                    da.Fill(dt);
+                }
+            }
+            return dt;
+        }
 
         public DataRow ObtenerProductoCompleto(int idProducto)
         {
