@@ -104,88 +104,98 @@ right:0%;
                   </p>
                 </div> 
                  <div class="container text-center" style=" background-color:white; width:100%; height: 88%; background-repeat :no-repeat;  z-index: auto; overflow-y:scroll" >
-                     <asp:GridView ID="GridView1" runat="server" ForeColor="Black" Width="100%" BorderColor="Transparent" CellSpacing="5" HorizontalAlign="Center" AutoPostBack="True"
-                         AutoGenerateColumns="false" AutoGenerateSelectButton="True" OnSelectedIndexChanging="Select1" >
-                          <SelectedRowStyle BackColor="#80cdbb" Font-Bold="true" />
+                    <asp:GridView 
+    ID="GridView1" 
+    runat="server"
+    DataKeyNames="idproducto,idimagen"
+    AutoGenerateColumns="false"
+    AutoGenerateSelectButton="True"
+    OnSelectedIndexChanging="Select1"
+    OnRowDataBound="GridView1_RowDataBound"
+    CssClass="tabla-precios"
+    GridLines="Both"
+    BorderColor="#ccc"
+    BorderWidth="1px"
+    CellSpacing="5"
+    HorizontalAlign="Center"
+    Width="100%">
+  
+  <HeaderStyle BackColor="Black" ForeColor="White" Font-Bold="True" />
+  <SelectedRowStyle BackColor="#80cdbb" Font-Bold="True" />
 
-                         <HeaderStyle BackColor="Black" Font-Bold="True" Font-Italic="False" ForeColor="White"/>
-                        <SelectedRowStyle BorderStyle="Solid" />
+  <Columns>
+    <%-- Nombre --%>
+    <asp:TemplateField HeaderText="Producto">
+      <ItemTemplate>
+        <asp:Label ID="lblNombreProd" runat="server"
+           Text='<%# Eval("nombre") %>' />
+      </ItemTemplate>
+    </asp:TemplateField>
 
-                            <Columns>
-                        <asp:TemplateField HeaderText="Producto">
-                        <ItemTemplate>
-                        <asp:Label ID="Label9" runat="server" Text='<% # Bind("Nombre") %>' Enabled="false" Width="240px" Height="65"></asp:Label>
-                        </ItemTemplate>
-                        <EditItemTemplate>
-                        <asp:TextBox ID="TextBox9" runat="server" Text='<% # Bind("Nombre") %>' Enabled="false" Width="240px" Height="65"></asp:TextBox>
-                        </EditItemTemplate>
-                        </asp:TemplateField>
+    <asp:TemplateField HeaderText="Precio (U)">
+  <ItemTemplate>
+    <asp:Label 
+       ID="lblPrecioU" 
+       runat="server"
+       Text='<%# Eval("unidad",   "{0:C}") %>' />
+  </ItemTemplate>
+</asp:TemplateField>
 
-                        <asp:TemplateField HeaderText="Precio(U)">
-                        <ItemTemplate>
-                        <asp:Label ID="Label10" runat="server" Text='<% # Bind("Unidad") %>' Enabled="false" Width="60px" Height="65"></asp:Label>
-                        </ItemTemplate>
-                        <EditItemTemplate>
-                        <asp:TextBox ID="TextBox10" runat="server" Text='<% # Bind("Unidad") %>' Enabled="false" Width="60px" Height="65" ></asp:TextBox>
-                        </EditItemTemplate>
-                        </asp:TemplateField>
+<asp:TemplateField HeaderText="Precio (3)">
+  <ItemTemplate>
+    <asp:Label 
+       ID="lblPrecio3" 
+       runat="server"
+       Text='<%# Eval("tresomas","{0:C}") %>' />
+  </ItemTemplate>
+</asp:TemplateField>
 
-                        <asp:TemplateField HeaderText="Precio(3)">
-                        <ItemTemplate>
-                        <asp:Label ID="Label11" runat="server" Text='<% # Bind("tresomas") %>' Enabled="false" Width="60px" Height="65"></asp:Label>
-                        </ItemTemplate>
-                        <EditItemTemplate>
-                        <asp:TextBox ID="TextBox11" runat="server" Text='<% # Bind("tresomass") %>' Enabled="false" Width="60px" Height="65"></asp:TextBox>
-                        </EditItemTemplate>
-                        </asp:TemplateField>
+<asp:TemplateField HeaderText="Precio (Doc)">
+  <ItemTemplate>
+    <asp:Label 
+       ID="lblDocena" 
+       runat="server"
+       Text='<%# Eval("docena",  "{0:C}") %>' />
+  </ItemTemplate>
+</asp:TemplateField>
 
-                        <asp:TemplateField HeaderText="Precio(Doc)">
-                        <ItemTemplate>
-                        <asp:Label ID="Label12" runat="server" Text='<% # Bind("docena") %>' Enabled="false" Width="60px" Height="65"></asp:Label>
-                        </ItemTemplate>
-                        <EditItemTemplate>
-                        <asp:TextBox ID="TextBox12" runat="server" Text='<% # Bind("docena") %>' Enabled="false" Width="60px" Height="65"></asp:TextBox>
-                        </EditItemTemplate>
-                        </asp:TemplateField>
+<asp:TemplateField HeaderText="Precio (F)">
+  <ItemTemplate>
+    <asp:Label 
+       ID="lblFardo" 
+       runat="server"
+       Text='<%# Eval("fardo",   "{0:C}") %>' />
+  </ItemTemplate>
+</asp:TemplateField>
 
-                        <asp:TemplateField HeaderText="Precio(F)">
-                        <ItemTemplate>
-                        <asp:Label ID="Label13" runat="server" Text='<% # Bind("fardo") %>' Enabled="false" Width="60px" Height="65"></asp:Label>
-                        </ItemTemplate>
-                        <EditItemTemplate>
-                        <asp:TextBox ID="TextBox13" runat="server" Text='<% # Bind("fardo") %>' Enabled="false" Width="60px" Height="65"></asp:TextBox>
-                        </EditItemTemplate>
-                        </asp:TemplateField>
 
-                        <asp:TemplateField HeaderText="Codigo de barras" >
-                        <ItemTemplate >
-                        <asp:Label ID="Label14" runat="server"   Text='<% # Bind("codigodebarras") %>' Enabled="false" Width="150px" Height="65"></asp:Label>
-                        </ItemTemplate>
-                        <EditItemTemplate>
-                        <asp:TextBox ID="TextBox14" runat="server" Text='<% # Bind("codigodebarras") %>' Enabled="false" Width="150px" Height="65"></asp:TextBox>
-                        </EditItemTemplate>
-                        </asp:TemplateField>
+    <%-- Código de barras --%>
+    <asp:TemplateField HeaderText="Cód. Barras">
+      <ItemTemplate>
+        <asp:Label ID="lblCB" runat="server"
+           Text='<%# Eval("codigodebarras") %>' />
+      </ItemTemplate>
+    </asp:TemplateField>
 
-                        <asp:TemplateField HeaderText="Referencia">
-                        <ItemTemplate>
-                        <asp:Label ID="Label15" runat="server" Text='<% # Bind("Referencia") %>' Enabled="false" Width="60px" Height="65"></asp:Label>
-                        </ItemTemplate>
-                        <EditItemTemplate>
-                        <asp:TextBox ID="TextBox15" runat="server" Text='<% # Bind("Referencia") %>' Enabled="false" Width="60px" Height="65"></asp:TextBox>
-                        </EditItemTemplate>
-                        </asp:TemplateField>
+    <%-- Referencia --%>
+    <asp:TemplateField HeaderText="Referencia">
+      <ItemTemplate>
+        <asp:Label ID="lblRef" runat="server"
+           Text='<%# Eval("referencia") %>' />
+      </ItemTemplate>
+    </asp:TemplateField>
 
-                        <asp:TemplateField HeaderText="Imagen">
-                        <ItemTemplate>
-                        <asp:Label ID="Label16" runat="server" Text='<% # Bind("foto") %>' Enabled="false" Width="80px" Height="65"></asp:Label>
-                        </ItemTemplate>
-                        <EditItemTemplate>
-                        <asp:TextBox ID="TextBox16" runat="server" Text='<% # Bind("foto") %>' Enabled="false" Width="80px" Height="65"></asp:TextBox>
-                        </EditItemTemplate>
-                        </asp:TemplateField>
+    <%-- Imagen escondida --%>
+    <asp:BoundField DataField="idimagen" Visible="false" />
 
-                        </Columns>
-                        </asp:GridView><p />
+    <%-- Miniatura --%>
+    <asp:TemplateField HeaderText="Imagen">
+      <ItemTemplate>
+        <asp:Image ID="imgMini" runat="server" Width="60" Height="60" />
+      </ItemTemplate>
+    </asp:TemplateField>
+  </Columns>
+</asp:GridView>
                 </div> 
           </div>
         </div>

@@ -1,6 +1,9 @@
 ﻿using System;
 using System.Data;
+using System.Globalization;
+using System.Linq;
 using System.Web.UI.WebControls;
+
 
 namespace PandaMay.Empleados
 {
@@ -20,9 +23,9 @@ namespace PandaMay.Empleados
                 TextBox36.Text = usuario;
                 
                 conectado.conectar();
-                GridView1.DataSource = conectado.productos();
+                GridView1.DataSource = conectado.GetProductosConTarifas();
                 GridView1.DataBind();
-                
+
                 conectado.desconectar();
 
                 foreach (GridViewRow roww in GridView3.Rows)//crea la suma para el total del gridview
@@ -72,144 +75,126 @@ namespace PandaMay.Empleados
             String usuario = Session["usuario"].ToString();
             conectado.conectar();
             string buscar = TextBox1.Text;
-            if (buscar != "")
+            if (!string.IsNullOrWhiteSpace(buscar))
             {
-                GridView1.DataSource = conectado.buscarproducto(buscar);
-                GridView1.DataBind();
+                GridView1.DataSource = conectado.BuscarProductosConTarifas(buscar);
             }
             else
             {
-                GridView1.DataSource = conectado.productos();
-                GridView1.DataBind();
+                GridView1.DataSource = conectado.GetProductosConTarifas();
             }
+
             conectado.desconectar();
 
         }
         DataTable dt = new DataTable();
-        protected void Select1(object sender, System.Web.UI.WebControls.GridViewSelectEventArgs e)
+        protected void Select1(object sender, GridViewSelectEventArgs e)
         {
+            // 1) Fila seleccionada
             GridViewRow fila = GridView1.Rows[e.NewSelectedIndex];
-            String nombre = (fila.FindControl("Label9") as System.Web.UI.WebControls.Label).Text.ToUpper();
-            String unidadd = (fila.FindControl("Label10") as System.Web.UI.WebControls.Label).Text.ToUpper();
-            int unidad = Convert.ToInt32(unidadd);
-            String treomass = (fila.FindControl("Label11") as System.Web.UI.WebControls.Label).Text.ToUpper();
-            int treomas = Convert.ToInt32(treomass);
-            String docenaa = (fila.FindControl("Label12") as System.Web.UI.WebControls.Label).Text.ToUpper();
-            int docena = Convert.ToInt32(docenaa);
-            // String fardoo = (fila.FindControl("Label13") as System.Web.UI.WebControls.Label).Text.ToUpper();
-            // int fardo = Convert.ToInt32(fardoo);
-            conectado.conectar();
-            
-            if (GridView3.Rows.Count > 0)//se verifica si hay datos en el Gridview, si hay hacer lo siguiente
+
+            // 2) Leer los labels por ID
+            string nombre = (fila.FindControl("lblNombreProd") as Label).Text;
+            string txtU = (fila.FindControl("lblPrecioU") as Label).Text;
+            string txt3 = (fila.FindControl("lblPrecio3") as Label).Text;
+            string txtDoc = (fila.FindControl("lblDocena") as Label).Text;
+            string txtF = (fila.FindControl("lblFardo") as Label).Text;
+
+            // 3) Parsear cada precio como moneda
+            decimal precioU = Decimal.Parse(txtU, NumberStyles.Currency, CultureInfo.CurrentCulture);
+            decimal precio3 = Decimal.Parse(txt3, NumberStyles.Currency, CultureInfo.CurrentCulture);
+            decimal precioDoc = Decimal.Parse(txtDoc, NumberStyles.Currency, CultureInfo.CurrentCulture);
+            decimal precioF = Decimal.Parse(txtF, NumberStyles.Currency, CultureInfo.CurrentCulture);
+
+            // 4) Opcional: a int si no manejas decimales
+            int unidad = (int)precioU;
+            int tresomas = (int)precio3;
+            int docena = (int)precioDoc;
+            int fardo = (int)precioF;
+
+            // 5) Lógica de carrito (GridView2/3)
+            if (GridView3.Rows.Count > 0)
             {
-                string dato = "";
-                string dato2 = "";
-                int dato3 = 0;
-                int kk = 0;
-                for (int k = 0; k < GridView3.Rows.Count; k++) // se verifica si el gridview ya tiene una fila con ese nombre
+                // Reconstruimos dt con las filas actuales
+                dt = new DataTable();
+                foreach (TableCell th in GridView3.HeaderRow.Cells)
+                    dt.Columns.Add(th.Text);
+                foreach (GridViewRow r in GridView3.Rows)
                 {
-                    dato = Convert.ToString(GridView3.Rows[k].Cells[1].Text);
-
-                    if (dato == nombre)
-                    {
-                        dato2 = dato;
-                        dato3 = Convert.ToInt16(GridView3.Rows[k].Cells[0].Text);
-                        kk = Convert.ToInt16(k);
-                    }
+                    var dr = dt.NewRow();
+                    for (int i = 0; i < r.Cells.Count; i++)
+                        dr[i] = r.Cells[i].Text;
+                    dt.Rows.Add(dr);
                 }
 
-                if (dato2 == nombre)//si el gridview ya tiene un registro con ese nombre, solo se agrega mas cantidad
+                // ¿Ya existe el producto?
+                int idx = dt.Rows.Cast<DataRow>()
+                                 .ToList()
+                                 .FindIndex(r => r[1].ToString() == nombre);
+                if (idx >= 0)
                 {
-                    for (int i = 0; i < GridView3.HeaderRow.Cells.Count; i++)
-                    {
-                        dt.Columns.Add(GridView3.HeaderRow.Cells[i].Text); //se agregan los nombres de las columnas
-                    }
+                    int vieja = Convert.ToInt32(dt.Rows[idx][0]);
+                    dt.Rows.RemoveAt(idx);
+                    int nuevaCant = vieja + 1;
 
-                    //  add each of the data rows to the table
-                    foreach (GridViewRow row in GridView3.Rows)
-                    {
-                        DataRow dr;
-                        dr = dt.NewRow();
-
-                        for (int i = 0; i < row.Cells.Count; i++)
-                        {
-                            dr[i] = row.Cells[i].Text.Replace(" ", " ");//se agregan los datos de las columnas
-                        }
-                        dt.Rows.Add(dr);
-
-                    }
-                    int dato4 = dato3 + 1;
-                    if (dato4 < 3)//se agrega la linea que contiene registro con ese nombre pero con mas cantidad y se cambia el precio
-                    {
-                        dt.Rows.Add(dato4, nombre,  unidad, (dato4 * unidad));
-                        dt.Rows.RemoveAt(kk);//se elimina la linea que contiene registro con ese nombre
-                    }
-                    else if (dato4 >= 3 && dato4 < 12)
-                    {
-                        dt.Rows.Add(dato4, nombre, treomas, (dato4 * treomas));
-                        dt.Rows.RemoveAt(kk);//se elimina la linea que contiene registro con ese nombre
-                    }
-                    else if (dato4 >= 12)
-                    {
-                        dt.Rows.Add(dato4, nombre, docena,  (dato4 * docena));
-                        dt.Rows.RemoveAt(kk);//se elimina la linea que contiene registro con ese nombre
-                    }
-                    GridView2.DataSource = dt;
-                    GridView2.DataBind();
-                    GridView3.DataSource = dt;
-                    GridView3.DataBind();
+                    int precioAplicado = nuevaCant < 3 ? unidad
+                                         : nuevaCant < 12 ? tresomas
+                                         : docena;
+                    dt.Rows.Add(nuevaCant, nombre, precioAplicado, nuevaCant * precioAplicado);
                 }
-                else //si el gridview NO tiene un registro con ese nombre, solo se agrega mas cantidad
+                else
                 {
-                    for (int i = 0; i < GridView3.HeaderRow.Cells.Count; i++)
-                    {
-                        dt.Columns.Add(GridView3.HeaderRow.Cells[i].Text); //se agregan los nombres de las columnas
-                    }
-                    //  add each of the data rows to the table
-                    foreach (GridViewRow row in GridView3.Rows)
-                    {
-                        DataRow dr;
-                        dr = dt.NewRow();
-
-                        for (int i = 0; i < row.Cells.Count; i++)
-                        {
-                            dr[i] = row.Cells[i].Text;//se agregan los datos de las columnas
-                        }
-                        dt.Rows.Add(dr);
-                    }
-                    dt.Rows.Add("1", nombre,unidad, unidad);
-                    GridView2.DataSource = dt;
-                    GridView2.DataBind();
-                    GridView3.DataSource = dt;
-                    GridView3.DataBind();
+                    dt.Rows.Add(1, nombre, unidad, unidad);
                 }
             }
-            else // si el gridview no tiene datos, se crea un nuevo registro
+            else
             {
-                DataTable table = new DataTable();
-                table.Columns.Add("Cantidad");
-                table.Columns.Add("Nombre");
-                table.Columns.Add("Precio");
-                table.Columns.Add("Total");
-                DataRow row;
-                row = table.NewRow();
-                row["Cantidad"] = "1";
-                row["Nombre"] = nombre;
-                row["Precio"] = unidad;
-                row["Total"] =  unidad;
-                table.Rows.Add(row);
-                GridView2.DataSource = table;
-                GridView2.DataBind();
-                GridView3.DataSource = table;
-                GridView3.DataBind();
+                // Carrito vacío: armamos dt de cero
+                dt = new DataTable();
+                dt.Columns.Add("Cantidad"); dt.Columns.Add("Nombre");
+                dt.Columns.Add("Precio"); dt.Columns.Add("Total");
+                var dr = dt.NewRow();
+                dr["Cantidad"] = 1;
+                dr["Nombre"] = nombre;
+                dr["Precio"] = unidad;
+                dr["Total"] = unidad;
+                dt.Rows.Add(dr);
             }
+
+            // 6) Bindeamos a ambos grids
+            GridView2.DataSource = dt; GridView2.DataBind();
+            GridView3.DataSource = dt; GridView3.DataBind();
+
+            // 7) Recalculamos total
             double total = 0;
-            foreach (GridViewRow roww in GridView3.Rows)//crea la suma para el total del gridview
-            {
-                total += Convert.ToDouble(roww.Cells[3].Text);
-            }
-            Label1.Text = Convert.ToString(total);
+            foreach (GridViewRow rw in GridView3.Rows)
+                total += Convert.ToDouble(rw.Cells[3].Text);
+            Label1.Text = total.ToString("N2");
         }
+
+
+
+        /// <summary>
+        /// Carga la miniatura de imagen para cada fila del grid.
+        /// </summary>
+        protected void GridView1_RowDataBound(object sender, GridViewRowEventArgs e)
+        {
+            if (e.Row.RowType != DataControlRowType.DataRow) return;
+
+            var drv = (DataRowView)e.Row.DataItem;
+            int idImg = drv["idimagen"] != DBNull.Value
+                ? Convert.ToInt32(drv["idimagen"])
+                : 0;
+
+            var img = (Image)e.Row.FindControl("imgMini");
+            if (img == null) return;
+
+            if (idImg > 0)
+                img.ImageUrl = $"~/VerImagen.ashx?imgid={idImg}&t={DateTime.Now.Ticks}";
+            else
+                img.ImageUrl = ResolveUrl("~/uploads/productos/aretes.png");
+        }
+
         protected void RowUpdatingEvent1(object sender, System.Web.UI.WebControls.GridViewUpdateEventArgs e)
         {
             GridViewRow fila = GridView2.Rows[e.RowIndex];
