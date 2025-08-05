@@ -72,9 +72,13 @@ namespace PandaMay.Empleados
 
         protected void TextBox1_TextChanged(object sender, EventArgs e)
         {
-            String usuario = Session["usuario"].ToString();
+            // Obtener el texto de búsqueda y recortar espacios
+            string buscar = TextBox1.Text.Trim();
+
+            // Abrir conexión
             conectado.conectar();
-            string buscar = TextBox1.Text;
+
+            // Asignar la fuente de datos según si hay o no texto de búsqueda
             if (!string.IsNullOrWhiteSpace(buscar))
             {
                 GridView1.DataSource = conectado.BuscarProductosConTarifas(buscar);
@@ -84,9 +88,13 @@ namespace PandaMay.Empleados
                 GridView1.DataSource = conectado.GetProductosConTarifas();
             }
 
-            conectado.desconectar();
+            // Siempre enlazar el GridView después de asignar DataSource
+            GridView1.DataBind();
 
+            // Cerrar conexión
+            conectado.desconectar();
         }
+
         DataTable dt = new DataTable();
         protected void Select1(object sender, GridViewSelectEventArgs e)
         {
@@ -101,16 +109,20 @@ namespace PandaMay.Empleados
             string txtF = (fila.FindControl("lblFardo") as Label).Text;
 
             // 3) Parsear cada precio como moneda
-            decimal precioU = Decimal.Parse(txtU, NumberStyles.Currency, CultureInfo.CurrentCulture);
-            decimal precio3 = Decimal.Parse(txt3, NumberStyles.Currency, CultureInfo.CurrentCulture);
-            decimal precioDoc = Decimal.Parse(txtDoc, NumberStyles.Currency, CultureInfo.CurrentCulture);
-            decimal precioF = Decimal.Parse(txtF, NumberStyles.Currency, CultureInfo.CurrentCulture);
+            decimal precioU, precio3, precioDoc, precioF;
 
-            // 4) Opcional: a int si no manejas decimales
+            // intenta parsear, si falla asigna cero
+            if (!decimal.TryParse(txtU, NumberStyles.Currency, CultureInfo.CurrentCulture, out precioU)) precioU = 0m;
+            if (!decimal.TryParse(txt3, NumberStyles.Currency, CultureInfo.CurrentCulture, out precio3)) precio3 = 0m;
+            if (!decimal.TryParse(txtDoc, NumberStyles.Currency, CultureInfo.CurrentCulture, out precioDoc)) precioDoc = 0m;
+            if (!decimal.TryParse(txtF, NumberStyles.Currency, CultureInfo.CurrentCulture, out precioF)) precioF = 0m;
+
+            // ahora conviertes a int (si manejas solo enteros)
             int unidad = (int)precioU;
             int tresomas = (int)precio3;
             int docena = (int)precioDoc;
             int fardo = (int)precioF;
+
 
             // 5) Lógica de carrito (GridView2/3)
             if (GridView3.Rows.Count > 0)
