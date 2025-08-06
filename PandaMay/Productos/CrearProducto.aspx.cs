@@ -82,28 +82,38 @@ namespace PandaMay.Productos
 
                 // 3) UNIDADES
                 ddlUnidad.Items.Clear();
+                // — Placeholder principal
                 ddlUnidad.Items.Add(new ListItem("-- Unidad --", ""));
+                // — Opción “Agregar nueva unidad” en segundo lugar
+                ddlUnidad.Items.Add(new ListItem("-- Agregar nueva unidad --", "0"));
+
+                // — Carga las unidades existentes —
                 using (var cmd3 = new SqlCommand(
-                    "SELECT idunidaddemedida,nombre FROM dbo.UNIDADDEMEDIDAS WHERE activo=1", cn))
+                    "SELECT idunidaddemedida,nombre FROM dbo.UNIDADDEMEDIDAS WHERE activo=1 ORDER BY nombre", cn))
                 using (var dr3 = cmd3.ExecuteReader())
                     while (dr3.Read())
                         ddlUnidad.Items.Add(new ListItem(
                             dr3["nombre"].ToString(),
                             dr3["idunidaddemedida"].ToString()));
-                ddlUnidad.Items.Add(new ListItem("-- Agregar nueva unidad --", "0"));
+
 
                 // 4) MARCAS
+                // — Limpiar y poner placeholder —
                 ddlMarca.Items.Clear();
                 ddlMarca.Items.Add(new ListItem("-- Marca --", ""));
-                using (var cmd4 = new SqlCommand(
-    "SELECT idmarca,nombre FROM dbo.MARCAS ORDER BY nombre", cn))
+                // — Insertar “Agregar nueva” como segundo ítem —
+                ddlMarca.Items.Add(new ListItem("-- Agregar nueva marca --", "0"));
 
+                // — Cargar todas las marcas de la BD —
+                using (var cmd4 = new SqlCommand(
+                    "SELECT idmarca,nombre FROM dbo.MARCAS WHERE activo=1 ORDER BY nombre", cn))
                 using (var dr4 = cmd4.ExecuteReader())
                     while (dr4.Read())
                         ddlMarca.Items.Add(new ListItem(
                             dr4["nombre"].ToString(),
                             dr4["idmarca"].ToString()));
-                ddlMarca.Items.Add(new ListItem("-- Agregar nueva marca --", "0"));
+
+
 
                 // 5) COLORES IMAGEN
                 ddlImgColor.Items.Clear();
@@ -145,42 +155,55 @@ namespace PandaMay.Productos
         // Recarga SOLO la lista de unidades y deja seleccionada la recién creada
         private void RecargarUnidadesSeleccionando(int idNew)
         {
+            // 1) Limpiar y placeholder + nueva
             ddlUnidad.Items.Clear();
             ddlUnidad.Items.Add(new ListItem("-- Unidad --", ""));
+            ddlUnidad.Items.Add(new ListItem("-- Agregar nueva unidad --", "0"));
+
+            // 2) Abrir conexión y cargar unidades
             using (var cn = new SqlConnection(_connString))
-            using (var cmd = new SqlCommand(
-                "SELECT idunidaddemedida,nombre FROM dbo.UNIDADDEMEDIDAS WHERE activo=1", cn))
             {
                 cn.Open();
+                using (var cmd = new SqlCommand(
+                    "SELECT idunidaddemedida,nombre FROM dbo.UNIDADDEMEDIDAS WHERE activo=1 ORDER BY nombre", cn))
                 using (var dr = cmd.ExecuteReader())
                     while (dr.Read())
                         ddlUnidad.Items.Add(new ListItem(
                             dr["nombre"].ToString(),
                             dr["idunidaddemedida"].ToString()));
             }
-            ddlUnidad.Items.Add(new ListItem("-- Agregar nueva unidad --", "0"));
+
+            // 3) Seleccionar la recién creada
             ddlUnidad.SelectedValue = idNew.ToString();
         }
+
 
         // Recarga SOLO la lista de marcas y deja seleccionada la recién creada
         private void RecargarMarcasSeleccionando(int idNew)
         {
+            // 1) Limpiar y placeholder + nueva
             ddlMarca.Items.Clear();
             ddlMarca.Items.Add(new ListItem("-- Marca --", ""));
+            ddlMarca.Items.Add(new ListItem("-- Agregar nueva marca --", "0"));
+
+            // 2) Abrir conexión para recarga
             using (var cn = new SqlConnection(_connString))
-            using (var cmd = new SqlCommand(
-                "SELECT idmarca,nombre FROM dbo.MARCAS WHERE activo=1", cn))
             {
                 cn.Open();
+                using (var cmd = new SqlCommand(
+                    "SELECT idmarca,nombre FROM dbo.MARCAS WHERE activo=1 ORDER BY nombre", cn))
                 using (var dr = cmd.ExecuteReader())
                     while (dr.Read())
                         ddlMarca.Items.Add(new ListItem(
                             dr["nombre"].ToString(),
                             dr["idmarca"].ToString()));
             }
-            ddlMarca.Items.Add(new ListItem("-- Agregar nueva marca --", "0"));
+
+            // 3) Seleccionar la marca recién agregada
             ddlMarca.SelectedValue = idNew.ToString();
         }
+
+
 
 
 

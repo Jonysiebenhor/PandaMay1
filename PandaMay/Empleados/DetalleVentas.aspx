@@ -91,14 +91,40 @@ right:0%;
                     <asp:Button ID="Button3" CssClass="orangebutton" runat="server" Text="<-Anterior" OnClick="Anterior" />
                     <asp:Button ID="Button4" CssClass="orangebutton" runat="server" Text="Siguiente->" OnClick="Siguiente" />
                    
-                    <asp:DropDownList ID="DropDownList5" CssClass="dropdownlist" runat="server" OnSelectedIndexChanged="ddltienda_SelectedIndexChanged" AutoPostBack="True" AppendDataBoundItems="True" DataSourceID="SqlDataSource4" DataTextField="nombre" DataValueField="idtienda">
-                        <asp:ListItem Selected="True" Value="0">--Tienda</asp:ListItem>
-       </asp:DropDownList>
-  <asp:SqlDataSource ID="SqlDataSource4" runat="server" ConnectionString="<%$ ConnectionStrings:ConnectionString4 %>" SelectCommand="select * from tiendas a left join empleadostiendas b on a.idtienda=b.idtienda left join empleados c on b.idempleado=c.idempleado left join usuarios d on c.idusuario=d.idusuario where d.usuario= @nombre order by a.nombre asc;">
-    <SelectParameters>
-    <asp:SessionParameter SessionField="usuario" Name="nombre" Type="String"></asp:SessionParameter>
-    </SelectParameters>
-    </asp:SqlDataSource>
+                   <%-- SqlDataSource que alimenta el DropDownList --%>
+<asp:SqlDataSource
+    ID="SqlDataSource4"
+    runat="server"
+    ConnectionString="<%$ ConnectionStrings:ConnectionString4 %>"
+    SelectCommand="
+      SELECT a.idtienda, a.nombre
+      FROM tiendas a
+      INNER JOIN empleadostiendas b ON a.idtienda = b.idtienda
+      INNER JOIN empleados c      ON b.idempleado = c.idempleado
+      INNER JOIN usuarios d       ON c.idusuario  = d.idusuario
+      WHERE d.usuario = @nombre
+      ORDER BY a.nombre ASC">
+  <SelectParameters>
+    <asp:SessionParameter
+      Name="nombre"
+      SessionField="usuario"
+      Type="String" />
+  </SelectParameters>
+</asp:SqlDataSource>
+
+<%-- DropDownList de tiendas --%>
+<asp:DropDownList
+    ID="DropDownList5"
+    runat="server"
+    DataSourceID="SqlDataSource4"
+    DataTextField="nombre"
+    DataValueField="idtienda"
+    AutoPostBack="True"
+    OnSelectedIndexChanged="ddltienda_SelectedIndexChanged">
+    <%-- Ítem estático que aparece antes de los datos enlazados --%>
+    <asp:ListItem Value="0" Text="--Tienda--" />
+</asp:DropDownList>
+
 
                     <asp:TextBox ID="TextBox1" CssClass="buscador" runat="server" placeholder="Buscar Productos..." OnSelectedIndexChanged="TextBox1_SelectedIndexChanged" OnTextChanged="TextBox1_TextChanged" AutoPostBack="True" TextMode="Search"></asp:TextBox>
                   </p>

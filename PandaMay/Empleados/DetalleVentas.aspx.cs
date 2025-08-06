@@ -15,55 +15,56 @@ namespace PandaMay.Empleados
         {
             if (!IsPostBack)
             {
-                if (Session["usuario"] is null)
-                {
+                // 1) Verificar sesión
+                if (Session["usuario"] == null)
                     Response.Redirect("/Login.aspx");
-                }
-                String usuario = Session["usuario"].ToString();
+
+                // 2) Mostrar usuario en el textbox
+                string usuario = Session["usuario"].ToString();
                 TextBox36.Text = usuario;
-                
+
+                // 3) Abrir conexión
                 conectado.conectar();
+
+                // 4) Cargar productos en GridView1
                 GridView1.DataSource = conectado.GetProductosConTarifas();
                 GridView1.DataBind();
 
+                // 5) Cargar tiendas en DropDownList5 (usa DataSourceID=SqlDataSource4 en el .aspx)
+                DropDownList5.DataBind();                       // fuerza el DataBind
+                DropDownList5.Items.Insert(0,                  // inserta el placeholder al inicio
+                    new ListItem("--Tienda--", "0"));
+
+                // 6) Cerrar conexión
                 conectado.desconectar();
 
-                foreach (GridViewRow roww in GridView3.Rows)//crea la suma para el total del gridview
-                {
-                    double total = 0;
-                    total = Convert.ToDouble(roww.Cells[3].Text);
-                    Label1.Text = Convert.ToString(total);
-                    
-                }
+                // 7) Inicializar total del carrito si hubiera filas en GridView3
+                double initialTotal = 0;
+                foreach (GridViewRow row in GridView3.Rows)
+                    initialTotal += Convert.ToDouble(row.Cells[3].Text);
+                Label1.Text = initialTotal.ToString("N2");
             }
-            Label17.Visible = false;
-            Label8.Text = Label1.Text;
-            
-            string total2 = Convert.ToString(Label8.Text);
-            String total3= Convert.ToString(TextBox37.Text);
-            if (total3 == "")
-            {
-                total3 = "0";
-            }
-            String total4 = Convert.ToString(TextBox8.Text);
-            if (total4 == "")
-            {
-                total4 = "0";
-            }
-            String total5 = Convert.ToString(TextBox10.Text);
-            if (total5 == "")
-            {
-                total5 = "0";
-            }
-            double total22 = Convert.ToDouble(total2);
-            double total33 = Convert.ToDouble(total3);
-            double total44 = Convert.ToDouble(total4);
-            double total55 = Convert.ToDouble(total5);
-            diferencia =total22-total33-total44-total55;
-            Label10.Text= Convert.ToString(diferencia);//diferencia del total de la venta, con lo que se va a cobrar.
-            DropDownList1.SelectedValue = DropDownList5.SelectedValue;
 
+            // 8) Ocultar etiqueta de error
+            Label17.Visible = false;
+
+            // 9) Mostrar total de venta en Label8
+            Label8.Text = Label1.Text;
+
+            // 10) Calcular diferencia = totalVenta - (efectivo + trans1 + trans2)
+            double totalVenta = double.TryParse(Label8.Text, out var tv) ? tv : 0;
+            double efectivo = double.TryParse(TextBox37.Text, out var ef) ? ef : 0;
+            double trans1 = double.TryParse(TextBox8.Text, out var t1) ? t1 : 0;
+            double trans2 = double.TryParse(TextBox10.Text, out var t2) ? t2 : 0;
+            diferencia = totalVenta - efectivo - trans1 - trans2;
+            Label10.Text = diferencia.ToString("N2");
+
+            // 11) Sincronizar la tienda seleccionada en DropDownList1 (si la hay)
+            if (DropDownList5.SelectedValue != "0")
+                DropDownList1.SelectedValue = DropDownList5.SelectedValue;
         }
+
+
 
         protected void ddltienda_SelectedIndexChanged(object sender, EventArgs e)
         {
