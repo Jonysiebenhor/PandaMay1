@@ -51,12 +51,30 @@ namespace PandaMay.Productos
 
             RegistrarOpcionesMedidas();
 
+            // ——— Inyectar tiendas y fecha de hoy en el cliente ———
+            var sbT = new StringBuilder();
+            using (var cn = new SqlConnection(_connString))
+            using (var cmd = new SqlCommand("SELECT idtienda,nombre FROM TIENDAS WHERE activo=1", cn))
+            {
+                cn.Open();
+                using (var dr = cmd.ExecuteReader())
+                    while (dr.Read())
+                        sbT.AppendFormat("<option value=\"{0}\">{1}</option>",
+                                         dr.GetInt32(0),
+                                         dr.GetString(1));
+            }
+            string fechaHoy = DateTime.Today.ToString("yyyy-MM-dd");
+            var scriptTiendas = $@"
+<script>
+  var tiendaOptions = `{sbT}`;
+  var hoy = '{fechaHoy}';
+</script>";
+            ClientScript.RegisterClientScriptBlock(this.GetType(), "tiendaOpts", scriptTiendas, false);
 
             if (!IsPostBack)
             {
                 CargarListas();
-                CargarCategoriasMaestras();
-                LimpiarCombosCategorias();
+                CargarSubcategorias();
                 CargarPublicos();
 
             }
@@ -205,164 +223,107 @@ namespace PandaMay.Productos
 
 
 
-
-
-        // >>> PASO 3: Métodos para categorías/subcategorías
-
-        private void CargarCategoriasMaestras()
-        {
-            ddlCatMaestra.Items.Clear();
-            ddlCatMaestra.Items.Add(new ListItem("-- Cat. maestra --", ""));
-            using (var cn = new SqlConnection(_connString))
-            using (var cmd = new SqlCommand(
-                "SELECT idcategoriamaestra, nombre FROM CATEGORIASMAESTRAS WHERE activo = 1 ORDER BY nombre", cn))
-            {
-                cn.Open();
-                using (var dr = cmd.ExecuteReader())
-                    while (dr.Read())
-                        ddlCatMaestra.Items.Add(new ListItem(dr["nombre"].ToString(),
-                                                             dr["idcategoriamaestra"].ToString()));
-            }
-            ddlCatMaestra.Items.Add(new ListItem("-- Agregar nueva cat. maestra --", "0")); // <-- NUEVO
-        }
-
-
-        private void CargarCategoriasPorMaestra(int idMaestra)
-        {
-            ddlCategoria.Items.Clear();
-            ddlCategoria.Items.Add(new ListItem("-- Categoría --", ""));
-            using (var cn = new SqlConnection(_connString))
-            using (var cmd = new SqlCommand(@"
-        SELECT c.idcategoria, c.nombre
-          FROM CATEGORIAS c
-          JOIN CATEGORIASMAESTRASCATEGORIAS mc ON mc.idcategoria = c.idcategoria
-         WHERE mc.idcategoriamaestra = @idm AND c.activo = 1
-         ORDER BY c.nombre;", cn))
-            {
-                cmd.Parameters.AddWithValue("@idm", idMaestra);
-                cn.Open();
-                using (var dr = cmd.ExecuteReader())
-                    while (dr.Read())
-                        ddlCategoria.Items.Add(new ListItem(
-                            dr["nombre"].ToString(),
-                            dr["idcategoria"].ToString()));
-            }
-            ddlCategoria.Items.Add(new ListItem("-- Agregar nueva categoría --", "0"));
-        }
-
-        private void CargarSubcategoriasPorCategoria(int idCat)
+        /// <summary>
+        /// Carga todas las subcategorías activas en ddlSubcategoria.
+        /// </summary>
+        private void CargarSubcategorias()
         {
             ddlSubcategoria.Items.Clear();
-            ddlSubcategoria.Items.Add(new ListItem("-- Subcategoría --", ""));
+            // 1) Placeholder al inicio
+            ddlSubcategoria.Items.Add(new ListItem("-- Seleccione subcategoría --", ""));
+            // 2) Opción para abrir el panel de agregar
+            ddlSubcategoria.Items.Add(new ListItem("Agregar subcategoría", "new"));
+
+            const string sql = @"
+SELECT idsubcategoria, nombre
+  FROM dbo.SUBCATEGORIAS
+ WHERE activo = 1
+ ORDER BY nombre;";
+
             using (var cn = new SqlConnection(_connString))
-            using (var cmd = new SqlCommand(@"
-        SELECT s.idsubcategoria, s.nombre
-          FROM SUBCATEGORIAS s
-          JOIN CATEGORIASSUBCATEGORIAS cs ON cs.idsubcategoria = s.idsubcategoria
-         WHERE cs.idcategoria = @idc AND s.activo = 1
-         ORDER BY s.nombre;", cn))
+            using (var cmd = new SqlCommand(sql, cn))
             {
-                cmd.Parameters.AddWithValue("@idc", idCat);
                 cn.Open();
                 using (var dr = cmd.ExecuteReader())
+                {
                     while (dr.Read())
+                    {
                         ddlSubcategoria.Items.Add(new ListItem(
                             dr["nombre"].ToString(),
                             dr["idsubcategoria"].ToString()));
-            }
-            ddlSubcategoria.Items.Add(new ListItem("-- Agregar nueva subcategoría --", "0"));
-        }
-
-        private void LimpiarCombosCategorias()
-        {
-            ddlCategoria.Items.Clear();
-            ddlCategoria.Items.Add(new ListItem("-- Categoría --", ""));
-            ddlSubcategoria.Items.Clear();
-            ddlSubcategoria.Items.Add(new ListItem("-- Subcategoría --", ""));
-        }
-
-
-        // >>> PASO 4: Eventos de cascada
-
-        protected void ddlCatMaestra_SelectedIndexChanged(object sender, EventArgs e)
-        {
-            pnlAddSubcat.Visible = false;
-            pnlAddCat.Visible = false;
-
-            if (ddlCatMaestra.SelectedValue == "0")
-            {
-                // Mostrar panel para nueva Cat. Maestra
-                pnlAddCatM.Visible = true;
-
-                // Limpiar combos de categoría y subcategoría
-                LimpiarCombosCategorias();
-                return;
-            }
-
-            pnlAddCatM.Visible = false;
-
-            if (int.TryParse(ddlCatMaestra.SelectedValue, out int idM) && idM > 0)
-            {
-                CargarCategoriasPorMaestra(idM);
-                ddlSubcategoria.Items.Clear();
-                ddlSubcategoria.Items.Add(new ListItem("-- Subcategoría --", ""));
-            }
-            else
-            {
-                LimpiarCombosCategorias();
+                    }
+                }
             }
         }
 
-        protected void ddlCategoria_SelectedIndexChanged(object sender, EventArgs e)
-        {
-            pnlAddSubcat.Visible = false;
-
-            if (ddlCategoria.SelectedValue == "0")
-            {
-                // Mostrar panel para nueva Categoría
-                pnlAddCat.Visible = true;
-                ddlSubcategoria.Items.Clear();
-                ddlSubcategoria.Items.Add(new ListItem("-- Subcategoría --", ""));
-                return;
-            }
-
-            pnlAddCat.Visible = false;
-
-            if (int.TryParse(ddlCategoria.SelectedValue, out int idC) && idC > 0)
-            {
-                CargarSubcategoriasPorCategoria(idC);
-            }
-        }
-
-
-
+        // Detecta “new” y muestra el panel, o carga la jerarquía existente
         protected void ddlSubcategoria_SelectedIndexChanged(object sender, EventArgs e)
         {
-            pnlAddSubcat.Visible = ddlSubcategoria.SelectedValue == "0";
+            if (ddlSubcategoria.SelectedValue == "new")
+            {
+                // Mostrar formulario extendido
+                pnlAddFullSubcat.Visible = true;
+                return;
+            }
+            pnlAddFullSubcat.Visible = false;
+
+            // Rellenar Categoría Maestra y Categoría según la subcategoría elegida
+            if (int.TryParse(ddlSubcategoria.SelectedValue, out var idSub) && idSub > 0)
+            {
+                const string sql = @"
+SELECT 
+  cm.idcategoriamaestra, cm.nombre AS catMaestra,
+  c.idcategoria,          c.nombre       AS categoria
+FROM dbo.SUBCATEGORIAS s
+JOIN dbo.CATEGORIASSUBCATEGORIAS cs ON cs.idsubcategoria = s.idsubcategoria
+JOIN dbo.CATEGORIAS c                ON c.idcategoria   = cs.idcategoria
+JOIN dbo.CATEGORIASMAESTRASCATEGORIAS mc ON mc.idcategoria = c.idcategoria
+JOIN dbo.CATEGORIASMAESTRAS cm       ON cm.idcategoriamaestra = mc.idcategoriamaestra
+WHERE s.idsubcategoria = @idSub;";
+
+                using (var cn = new SqlConnection(_connString))
+                using (var cmd = new SqlCommand(sql, cn))
+                {
+                    cmd.Parameters.AddWithValue("@idSub", idSub);
+                    cn.Open();
+                    using (var dr = cmd.ExecuteReader())
+                        if (dr.Read())
+                        {
+                            ddlCatMaestra.Items.Clear();
+                            ddlCatMaestra.Items.Add(new ListItem(
+                                dr["catMaestra"].ToString(),
+                                dr["idcategoriamaestra"].ToString()));
+                            ddlCatMaestra.SelectedIndex = 0;
+
+                            ddlCategoria.Items.Clear();
+                            ddlCategoria.Items.Add(new ListItem(
+                                dr["categoria"].ToString(),
+                                dr["idcategoria"].ToString()));
+                            ddlCategoria.SelectedIndex = 0;
+                        }
+                }
+            }
         }
-
-
         // >>> PASO 5: Guardar nueva subcategoría
-        protected void btnGuardarSubcat_Click(object sender, EventArgs e)
+        // Crea Cat. Maestra, Cat. y Subcat en una transacción y recarga el dropdown
+        protected void btnAgregarSubFull_Click(object sender, EventArgs e)
         {
             lblError.Visible = false;
 
-            if (!int.TryParse(ddlCategoria.SelectedValue, out int idCategoria) || idCategoria <= 0)
+            // 1) Sólo leemos los nombres:
+            var nombreM = txtNewCatMFull.Text.Trim();
+            var nombreC = txtNewCatFull.Text.Trim();
+            var nombreS = txtNewSubFull.Text.Trim();
+
+            if (string.IsNullOrEmpty(nombreM) ||
+                string.IsNullOrEmpty(nombreC) ||
+                string.IsNullOrEmpty(nombreS))
             {
-                MostrarError("Seleccione una categoría antes de crear la subcategoría.");
+                MostrarError("Complete los tres nombres antes de agregar.");
                 return;
             }
 
-            var nombre = txtNewSubcat.Text.Trim();
-            var desc = txtNewSubcatDesc.Text.Trim();
-
-            if (string.IsNullOrEmpty(nombre))
-            {
-                MostrarError("Ingrese el nombre de la subcategoría.");
-                return;
-            }
-
-            int newSubId;
+            int idCatM, idCat, idSub;
             using (var cn = new SqlConnection(_connString))
             {
                 cn.Open();
@@ -370,46 +331,74 @@ namespace PandaMay.Productos
                 {
                     try
                     {
-                        // 1) SUBCATEGORIAS
+                        // 2) Insertar Categoría Maestra (sin descripción)
                         using (var cmd = new SqlCommand(@"
-INSERT INTO SUBCATEGORIAS (nombre, descripcion, descuento, activo, fecha)
-OUTPUT INSERTED.idsubcategoria
-VALUES (@n, @d, 0, 1, GETDATE());", cn, tx))
+INSERT INTO dbo.CATEGORIASMAESTRAS (nombre, activo, fecha)
+OUTPUT INSERTED.idcategoriamaestra
+VALUES (@n, 1, GETDATE());", cn, tx))
                         {
-                            cmd.Parameters.AddWithValue("@n", nombre);
-                            cmd.Parameters.AddWithValue("@d", string.IsNullOrEmpty(desc) ? (object)DBNull.Value : desc);
-                            newSubId = (int)cmd.ExecuteScalar();
+                            cmd.Parameters.AddWithValue("@n", nombreM);
+                            idCatM = (int)cmd.ExecuteScalar();
                         }
 
-                        // 2) Relación CATEGORIASSUBCATEGORIAS
-                        using (var cmd2 = new SqlCommand(@"
-INSERT INTO CATEGORIASSUBCATEGORIAS (idcategoria, idsubcategoria, descripcion, activo)
-VALUES (@c, @s, NULL, 1);", cn, tx))
+                        // 3) Insertar Categoría (sin descripción)
+                        using (var cmd = new SqlCommand(@"
+INSERT INTO dbo.CATEGORIAS (nombre, activo, fecha)
+OUTPUT INSERTED.idcategoria
+VALUES (@n, 1, GETDATE());", cn, tx))
                         {
-                            cmd2.Parameters.AddWithValue("@c", idCategoria);
-                            cmd2.Parameters.AddWithValue("@s", newSubId);
-                            cmd2.ExecuteNonQuery();
+                            cmd.Parameters.AddWithValue("@n", nombreC);
+                            idCat = (int)cmd.ExecuteScalar();
+                        }
+
+                        // 4) Enlazar Maestra→Categoría
+                        using (var cmd = new SqlCommand(@"
+INSERT INTO dbo.CATEGORIASMAESTRASCATEGORIAS
+  (idcategoriamaestra, idcategoria, activo)
+VALUES (@idm, @ic, 1);", cn, tx))
+                        {
+                            cmd.Parameters.AddWithValue("@idm", idCatM);
+                            cmd.Parameters.AddWithValue("@ic", idCat);
+                            cmd.ExecuteNonQuery();
+                        }
+
+                        // 5) Insertar Subcategoría (sin descripción)
+                        using (var cmd = new SqlCommand(@"
+INSERT INTO dbo.SUBCATEGORIAS (nombre, activo, fecha)
+OUTPUT INSERTED.idsubcategoria
+VALUES (@n, 1, GETDATE());", cn, tx))
+                        {
+                            cmd.Parameters.AddWithValue("@n", nombreS);
+                            idSub = (int)cmd.ExecuteScalar();
+                        }
+
+                        // 6) Enlazar Categoría→Subcategoría
+                        using (var cmd = new SqlCommand(@"
+INSERT INTO dbo.CATEGORIASSUBCATEGORIAS
+  (idcategoria, idsubcategoria, activo)
+VALUES (@ic, @is, 1);", cn, tx))
+                        {
+                            cmd.Parameters.AddWithValue("@ic", idCat);
+                            cmd.Parameters.AddWithValue("@is", idSub);
+                            cmd.ExecuteNonQuery();
                         }
 
                         tx.Commit();
                     }
                     catch (Exception ex)
                     {
-                        try { tx.Rollback(); } catch { }
-                        MostrarError("No se pudo guardar la subcategoría: " + ex.Message);
+                        tx.Rollback();
+                        MostrarError("No se pudo agregar: " + ex.Message);
                         return;
                     }
                 }
             }
 
-            // recargar y seleccionar
-            CargarSubcategoriasPorCategoria(idCategoria);
-            ddlSubcategoria.SelectedValue = newSubId.ToString();
-
-            pnlAddSubcat.Visible = false;
-            txtNewSubcat.Text = txtNewSubcatDesc.Text = "";
+            // 7) Recarga el dropdown y selecciona la subcategoría recién creada
+            CargarSubcategorias();
+            ddlSubcategoria.SelectedValue = idSub.ToString();
+            pnlAddFullSubcat.Visible = false;
         }
-
 
 
         private void RegistrarOpcionesMedidas()
@@ -477,111 +466,6 @@ VALUES (@c, @s, NULL, 1);", cn, tx))
             txtNewUnidad.Text = "";
         }
 
-        // ====== NUEVO: Guardar CATEGORÍA MAESTRA ======
-        protected void btnGuardarCatM_Click(object sender, EventArgs e)
-        {
-            lblError.Visible = false;
-
-            var nombre = txtNewCatM.Text.Trim();
-            var desc = txtNewCatMDesc.Text.Trim();
-
-            if (string.IsNullOrEmpty(nombre))
-            {
-                MostrarError("Ingrese el nombre de la categoría maestra.");
-                return;
-            }
-
-            int newId;
-            using (var cn = new SqlConnection(_connString))
-            using (var cmd = new SqlCommand(@"
-        INSERT INTO CATEGORIASMAESTRAS (nombre, descripcion, descuento, activo, fecha)
-        OUTPUT INSERTED.idcategoriamaestra
-        VALUES (@n, @d, 0, 1, GETDATE());", cn))
-            {
-                cmd.Parameters.AddWithValue("@n", nombre);
-                cmd.Parameters.AddWithValue("@d", string.IsNullOrEmpty(desc) ? (object)DBNull.Value : desc);
-                cn.Open();
-                newId = (int)cmd.ExecuteScalar();
-            }
-
-            CargarCategoriasMaestras();
-            ddlCatMaestra.SelectedValue = newId.ToString();
-
-            pnlAddCatM.Visible = false;
-            txtNewCatM.Text = txtNewCatMDesc.Text = "";
-
-            LimpiarCombosCategorias();
-        }
-
-        protected void btnGuardarCat_Click(object sender, EventArgs e)
-        {
-            lblError.Visible = false;
-
-            if (!int.TryParse(ddlCatMaestra.SelectedValue, out int idM) || idM <= 0)
-            {
-                MostrarError("Seleccione una categoría maestra antes de crear la categoría.");
-                return;
-            }
-
-            var nombre = txtNewCat.Text.Trim();
-            var desc = txtNewCatDesc.Text.Trim();
-
-            if (string.IsNullOrEmpty(nombre))
-            {
-                MostrarError("Ingrese el nombre de la categoría.");
-                return;
-            }
-
-            int newCatId;
-            using (var cn = new SqlConnection(_connString))
-            {
-                cn.Open();
-                using (var tx = cn.BeginTransaction())
-                {
-                    try
-                    {
-                        using (var cmd = new SqlCommand(@"
-INSERT INTO CATEGORIAS (nombre, descripcion, descuento, activo, fecha)
-OUTPUT INSERTED.idcategoria
-VALUES (@n, @d, 0, 1, GETDATE());", cn, tx))
-                        {
-                            cmd.Parameters.AddWithValue("@n", nombre);
-                            cmd.Parameters.AddWithValue("@d", string.IsNullOrEmpty(desc) ? (object)DBNull.Value : desc);
-                            newCatId = (int)cmd.ExecuteScalar();
-                        }
-
-                        using (var cmd2 = new SqlCommand(@"
-INSERT INTO CATEGORIASMAESTRASCATEGORIAS (idcategoriamaestra, idcategoria, descripcion, activo)
-VALUES (@m, @c, NULL, 1);", cn, tx))
-                        {
-                            cmd2.Parameters.AddWithValue("@m", idM);
-                            cmd2.Parameters.AddWithValue("@c", newCatId);
-                            cmd2.ExecuteNonQuery();
-                        }
-
-                        tx.Commit();
-                    }
-                    catch (Exception ex)
-                    {
-                        try { tx.Rollback(); } catch { }
-                        MostrarError("No se pudo guardar la categoría: " + ex.Message);
-                        return;
-                    }
-                }
-            }
-
-            CargarCategoriasPorMaestra(idM);
-            ddlCategoria.SelectedValue = newCatId.ToString();
-
-            pnlAddCat.Visible = false;
-            txtNewCat.Text = txtNewCatDesc.Text = "";
-
-            ddlSubcategoria.Items.Clear();
-            ddlSubcategoria.Items.Add(new ListItem("-- Subcategoría --", ""));
-        }
-
-
-
 
         protected void ddlMarca_SelectedIndexChanged(object s, EventArgs e)
         {
@@ -613,15 +497,12 @@ VALUES (@m, @c, NULL, 1);", cn, tx))
         }
 
         protected void btnGuardarProducto_Click(object s, EventArgs e)
-
         {
-
-
             Page.Validate("prod");
             if (!Page.IsValid) return;
             lblError.Visible = false;
 
-            // —– Validaciones previas idénticas a las tuyas —–
+            // —– Validaciones previas —–
             if (!int.TryParse(ddlUnidad.SelectedValue, out var unidad) || unidad == 0)
             { MostrarError("Seleccione o cree una unidad válida."); return; }
             if (!int.TryParse(ddlMarca.SelectedValue, out var marca) || marca == 0)
@@ -630,15 +511,10 @@ VALUES (@m, @c, NULL, 1);", cn, tx))
             { MostrarError("Seleccione tienda."); return; }
             if (!int.TryParse(ddlSubcategoria.SelectedValue, out var sc) || sc == 0)
             { MostrarError("Seleccione subcategoría."); return; }
-            // Validar que el usuario eligió un público
             if (!int.TryParse(ddlPublico.SelectedValue, out var idPublico) || idPublico == 0)
-            {
-                MostrarError("Seleccione un tipo de público válido.");
-                return;
-            }
+            { MostrarError("Seleccione un tipo de público válido."); return; }
 
-
-            // Lectura campos…
+            // —– Lectura de campos —–
             var nombre = txtNombre.Text.Trim();
             var referencia = txtReferencia.Text.Trim();
             var cb = long.TryParse(txtCodigoBarras.Text.Trim(), out var tmpCb) ? tmpCb : 0L;
@@ -646,14 +522,28 @@ VALUES (@m, @c, NULL, 1);", cn, tx))
             var tipo = txtTipo.Text.Trim();
             var descuento = float.TryParse(txtDescuento.Text.Trim(), out var tmpD) ? tmpD : 0f;
 
-            // Arrays dinámicos
+            // —– Tarifas —–
             var tarifas = Request.Form.GetValues("tarifa") ?? new string[0];
-            var aplicaEn = Request.Form.GetValues("aplicaEn") ?? new string[0];
             var precioVal = Request.Form.GetValues("precioVal") ?? new string[0];
-            var exMed = Request.Form.GetValues("exMedida") ?? new string[0];
-            var exCant = Request.Form.GetValues("exCant") ?? new string[0];
 
-            // Buffer para la imagen
+            // —– Historial de existencias —–
+            var salidas = Request.Form.GetValues("histTiendaSalida") ?? new string[0];
+            var recibos = Request.Form.GetValues("histTiendaRecibe") ?? new string[0];
+            var fechas = Request.Form.GetValues("histFecha") ?? new string[0];
+            var cantidades = Request.Form.GetValues("histCantidad") ?? new string[0];
+            var referenciasHist = Request.Form.GetValues("histReferencia") ?? new string[0];
+            var estados = Request.Form.GetValues("histEstado") ?? new string[0];
+
+            int filas = new[]{
+        salidas.Length,
+        recibos.Length,
+        fechas.Length,
+        cantidades.Length,
+        referenciasHist.Length,
+        estados.Length
+    }.Min();
+
+            // —– Imagen —–
             byte[] imgBytes = null;
             if (fuImagen.HasFile)
             {
@@ -664,7 +554,7 @@ VALUES (@m, @c, NULL, 1);", cn, tx))
                 }
             }
 
-            // Y aquí empieza la transacción única:
+            // —– Transacción única —–
             using (var cn = new SqlConnection(_connString))
             {
                 cn.Open();
@@ -676,11 +566,11 @@ VALUES (@m, @c, NULL, 1);", cn, tx))
                         int newId;
                         using (var cmd = new SqlCommand(@"
 INSERT INTO dbo.PRODUCTOS
- (idsubcategoria, idunidaddemedida, nombre,
-  referencia, codigodebarras, activo, tipodeproducto, descuento)
- OUTPUT INSERTED.idproducto
- VALUES
- (@sub, @uni, @nom, @ref, @cb, @act, @tip, @des);", cn, tx))
+  (idsubcategoria, idunidaddemedida, nombre,
+   referencia, codigodebarras, activo, tipodeproducto, descuento)
+OUTPUT INSERTED.idproducto
+VALUES
+  (@sub, @uni, @nom, @ref, @cb, @act, @tip, @des);", cn, tx))
                         {
                             cmd.Parameters.AddWithValue("@sub", sc > 0 ? (object)sc : DBNull.Value);
                             cmd.Parameters.AddWithValue("@uni", unidad);
@@ -693,85 +583,72 @@ INSERT INTO dbo.PRODUCTOS
                             newId = (int)cmd.ExecuteScalar();
                         }
 
-                        // 2) INSERT en EXISTENCIAS → existenciasIds[]
+                        // 2) INSERT en EXISTENCIAS + HISTORIAL
                         var existenciasIds = new List<int>();
-                        // Ahora sólo usamos exMed y exCant
-                        int existCount = Math.Min(exMed.Length, exCant.Length);
-
-                        for (int i = 0; i < existCount; i++)
+                        for (int i = 0; i < filas; i++)
                         {
-                            int medId = int.Parse(exMed[i]);
-                            int cantidad = int.Parse(exCant[i]);
-
-                            using (var cmd3 = new SqlCommand(@"
+                            // 2.1) EXISTENCIAS
+                            int idExist;
+                            using (var cmdE = new SqlCommand(@"
 INSERT INTO dbo.EXISTENCIAS
-  (idtienda, idproducto, idmarca, idmedida, cantidad)
- OUTPUT INSERTED.idexistencia
- VALUES
-  (@tid, @pid, @mar, @med, @can);", cn, tx))
+  (idtienda, idproducto, idimagen, idmedida, idmarca, cantidad, fechaingreso)
+OUTPUT INSERTED.idexistencia
+VALUES (@tid, @pid, NULL, @med, @mar, @can, @f);", cn, tx))
                             {
-                                cmd3.Parameters.AddWithValue("@tid", tienda);
-                                cmd3.Parameters.AddWithValue("@pid", newId);
-                                cmd3.Parameters.AddWithValue("@mar", marca);
-                                cmd3.Parameters.AddWithValue("@med", medId);
-                                cmd3.Parameters.AddWithValue("@can", cantidad);
-                                existenciasIds.Add((int)cmd3.ExecuteScalar());
+                                cmdE.Parameters.AddWithValue("@tid", int.Parse(recibos[i]));
+                                cmdE.Parameters.AddWithValue("@pid", newId);
+                                cmdE.Parameters.AddWithValue("@med", unidad);
+                                cmdE.Parameters.AddWithValue("@mar", marca);
+                                cmdE.Parameters.AddWithValue("@can", int.Parse(cantidades[i]));
+                                cmdE.Parameters.AddWithValue("@f", DateTime.Parse(fechas[i]));
+                                idExist = (int)cmdE.ExecuteScalar();
                             }
+                            existenciasIds.Add(idExist);
 
-                        }
-                        //  Asociar cada existencia con el público seleccionado
-                        foreach (var existenciaId in existenciasIds)
-                        {
-                            using (var cmdPub = new SqlCommand(@"
-INSERT INTO dbo.EXISTENCIASPUBLICOS
-  (idexistencia, idpublico, activo)
-VALUES
-  (@eid, @pub, 1);", cn, tx))
+                            // 2.2) HISTORIALESEXISTENCIAS
+                            using (var cmdH = new SqlCommand(@"
+INSERT INTO dbo.HISTORIALESEXISTENCIAS
+  (idexistencia, fecha, idtiendasalida, idtiendarecebe, cantidad, referencia, estado)
+VALUES (@eid, @f, @sal, @rec, @can, @ref, @est);", cn, tx))
                             {
-                                cmdPub.Parameters.AddWithValue("@eid", existenciaId);
-                                cmdPub.Parameters.AddWithValue("@pub", idPublico);
-                                cmdPub.ExecuteNonQuery();
+                                cmdH.Parameters.AddWithValue("@eid", idExist);
+                                cmdH.Parameters.AddWithValue("@f", DateTime.Parse(fechas[i]));
+                                cmdH.Parameters.AddWithValue("@sal", int.Parse(salidas[i]));
+                                cmdH.Parameters.AddWithValue("@rec", int.Parse(recibos[i]));
+                                cmdH.Parameters.AddWithValue("@can", int.Parse(cantidades[i]));
+                                cmdH.Parameters.AddWithValue("@ref", referenciasHist[i]);
+                                cmdH.Parameters.AddWithValue("@est", estados[i]);
+                                cmdH.ExecuteNonQuery();
                             }
                         }
 
-
-                        // 3) INSERT en PRECIOS — ahora todas las tarifas en la misma existencia
-                        const string sqlPrecios = @"
-INSERT INTO dbo.PRECIOS
-  (idexistencia, idnombreprecio, descripcion, precio, activo, fecha)
-VALUES
-  (@idexistencia, @idnombreprecio, @descripcion, @precio, 1, GETDATE());";
-
+                        // 3) INSERT en PRECIOS (sobre la primera existencia)
                         if (existenciasIds.Count > 0)
                         {
-                            int existenciaPrincipal = existenciasIds[0];      // usamos la primera existencia
-
+                            int existenciaPrincipal = existenciasIds[0];
+                            const string sqlPrecios = @"
+INSERT INTO dbo.PRECIOS
+  (idexistencia, idnombreprecio, precio, activo, fecha)
+VALUES
+  (@idexistencia, @idnombreprecio, @precio, 1, GETDATE());";
                             using (var cmdPrecio = new SqlCommand(sqlPrecios, cn, tx))
                             {
-                                // Recorremos todas las tarifas capturadas del formulario
                                 for (int i = 0; i < tarifas.Length; i++)
                                 {
-                                    if (!int.TryParse(tarifas[i], out int idNomPre) || idNomPre <= 0)
+                                    if (!int.TryParse(tarifas[i], out var idNomPre) || idNomPre <= 0)
                                         continue;
-
-                                    // limpia parámetros de la iteración anterior
                                     cmdPrecio.Parameters.Clear();
-
                                     cmdPrecio.Parameters.AddWithValue("@idexistencia", existenciaPrincipal);
                                     cmdPrecio.Parameters.AddWithValue("@idnombreprecio", idNomPre);
-                                    cmdPrecio.Parameters.AddWithValue("@descripcion", aplicaEn[i]);
                                     cmdPrecio.Parameters.AddWithValue("@precio", decimal.Parse(precioVal[i]));
-
                                     cmdPrecio.ExecuteNonQuery();
                                 }
                             }
                         }
 
-
-                        // 4) INSERT en IMAGENES y UPDATE EXISTENCIAS
-                        if (imgBytes != null && imgBytes.Length > 0)
+                        // 4) INSERT en IMAGENES y UPDATE EXISTENCIAS (última)
+                        if (imgBytes != null && imgBytes.Length > 0 && existenciasIds.Count > 0)
                         {
-                            // 4.1) Insertar imagen
                             int newImageId;
                             using (var cmdImg = new SqlCommand(@"
 INSERT INTO dbo.IMAGENES
@@ -780,53 +657,38 @@ VALUES
   (@col, @bin, @desc, 1, GETDATE());
 SELECT CAST(SCOPE_IDENTITY() AS INT);", cn, tx))
                             {
-                                int selectedColor = int.TryParse(ddlImgColor.SelectedValue, out var tmpC) ? tmpC : 0;
-                                cmdImg.Parameters.AddWithValue("@col", selectedColor > 0 ? (object)selectedColor : DBNull.Value);
+                                var col = int.TryParse(ddlImgColor.SelectedValue, out var tmpC) ? tmpC : 0;
+                                cmdImg.Parameters.AddWithValue("@col", col > 0 ? (object)col : DBNull.Value);
                                 cmdImg.Parameters.Add("@bin", SqlDbType.VarBinary, imgBytes.Length).Value = imgBytes;
                                 cmdImg.Parameters.AddWithValue("@desc", string.IsNullOrEmpty(txtImgDesc.Text)
-                                                                     ? (object)DBNull.Value
-                                                                     : txtImgDesc.Text.Trim());
+                                    ? (object)DBNull.Value
+                                    : txtImgDesc.Text.Trim());
                                 newImageId = (int)cmdImg.ExecuteScalar();
                             }
-
-                            // 4.2) Asociar a la última existencia
-                            if (existenciasIds.Count > 0)
-                            {
-                                int ultima = existenciasIds.Last();
-                                using (var cmdUpd = new SqlCommand(@"
+                            using (var cmdUpd = new SqlCommand(@"
 UPDATE dbo.EXISTENCIAS
   SET idimagen = @img
  WHERE idexistencia = @eid;", cn, tx))
-                                {
-                                    cmdUpd.Parameters.AddWithValue("@img", newImageId);
-                                    cmdUpd.Parameters.AddWithValue("@eid", ultima);
-                                    cmdUpd.ExecuteNonQuery();
-                                }
+                            {
+                                cmdUpd.Parameters.AddWithValue("@img", newImageId);
+                                cmdUpd.Parameters.AddWithValue("@eid", existenciasIds.Last());
+                                cmdUpd.ExecuteNonQuery();
                             }
                         }
 
-                        // 5) ¡Todo OK! confirmamos y salimos
+                        // Commit y salir
                         tx.Commit();
                         Response.Redirect("Productos.aspx");
                     }
                     catch (Exception ex)
                     {
-                        // Solo intentamos rollback si sigue abierta la conexión
-                        try
-                        {
-                            if (tx != null && tx.Connection != null && tx.Connection.State == ConnectionState.Open)
-                                tx.Rollback();
-                        }
-                        catch
-                        {
-                            // ya estaba completada, lo ignoramos
-                        }
-
+                        try { tx.Rollback(); } catch { }
                         MostrarError("Ocurrió un error al guardar: " + ex.Message);
                     }
                 }
             }
         }
+
 
 
 

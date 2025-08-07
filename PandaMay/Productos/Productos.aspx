@@ -137,8 +137,8 @@
     AutoGenerateColumns="false"
     CssClass="tabla-precios">
   <Columns>
-    <asp:BoundField DataField="idprecio" HeaderText="ID Precio" />
-    <asp:BoundField DataField="idproducto" HeaderText="ID Producto" />
+    <%-- <asp:BoundField DataField="idprecio" HeaderText="ID Precio" /> --%>
+    <%--<asp:BoundField DataField="idproducto" HeaderText="ID Producto" />--%>
     <asp:BoundField DataField="descripcion" HeaderText="Descripción" />
     <asp:BoundField DataField="precio" HeaderText="Precio" DataFormatString="{0:C}" />
     <asp:BoundField DataField="cantidad" HeaderText="Cantidad" />

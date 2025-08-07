@@ -44,59 +44,88 @@
     OnClientClick="window.history.back(); return false;" />
 
   <!-- ================= DATOS PRINCIPALES ================= -->
-  <fieldset class="section">
-    <legend>Datos de Producto</legend>
-    <div class="form-grid">
-      <!-- Categorías en cascada -->
-      <div class="field-group">
-        <label>Categoría maestra:</label>
-        <asp:DropDownList ID="ddlCatMaestra" runat="server" CssClass="form-control"
-            AutoPostBack="true" CausesValidation="false"
-            OnSelectedIndexChanged="ddlCatMaestra_SelectedIndexChanged" />
-      </div>
-      <asp:Panel ID="pnlAddCatM" runat="server" Visible="false" style="margin-top:.5rem;">
-        <asp:TextBox ID="txtNewCatM" runat="server" CssClass="form-control"
-            placeholder="Nueva categoría maestra..." />
-        <asp:TextBox ID="txtNewCatMDesc" runat="server" CssClass="form-control"
-            placeholder="Descripción (opcional)..." style="margin-top:.4rem;" />
-        <asp:Button ID="btnGuardarCatM" runat="server" CssClass="greenbutton"
-            Text="Guardar cat. maestra" OnClick="btnGuardarCatM_Click"
-            CausesValidation="false" />
-      </asp:Panel>
+<fieldset class="section">
+  <legend>Datos de Producto</legend>
+  <div class="form-grid">
 
+    <!-- Categoría maestra (sólo lectura) -->
+    <div class="field-group">
+      <label>Categoría maestra:</label>
+      <asp:DropDownList
+          ID="ddlCatMaestra"
+          runat="server"
+          CssClass="form-control"
+          Enabled="false" />
+    </div>
+
+    <!-- Categoría (sólo lectura) -->
+    <div class="field-group">
+      <label>Categoría:</label>
+      <asp:DropDownList
+          ID="ddlCategoria"
+          runat="server"
+          CssClass="form-control"
+          Enabled="false" />
+    </div>
+
+    <!-- Subcategoría (selección activa + opción “Agregar”) -->
+    <div class="field-group">
+      <label>Subcategoría:</label>
+      <asp:DropDownList
+          ID="ddlSubcategoria"
+          runat="server"
+          CssClass="form-control"
+          AutoPostBack="true"
+          OnSelectedIndexChanged="ddlSubcategoria_SelectedIndexChanged">
+      </asp:DropDownList>
+      <asp:RequiredFieldValidator
+          ID="rfvSubcategoria"
+          runat="server"
+          ControlToValidate="ddlSubcategoria"
+          InitialValue=""
+          ErrorMessage="* Requerido"
+          Display="Dynamic"
+          ValidationGroup="prod"
+          CssClass="validator" />
+    </div>
+
+  </div>
+</fieldset>
+
+<!-- Panel para crear Cat. Maestra → Cat. → Subcat. -->
+<asp:Panel ID="pnlAddFullSubcat" runat="server"
+    Visible="false" CssClass="section" style="margin-top:1rem;">
+  <fieldset>
+    <legend>Agregar nueva jerarquía</legend>
+    <div class="form-grid">
+      <!-- Sólo: Nombre de Maestra, Nombre de Categoría, Nombre de Subcategoría -->
+      <div class="field-group">
+        <label>Cat. Maestra:</label>
+        <asp:TextBox ID="txtNewCatMFull" runat="server"
+            CssClass="form-control" placeholder="Nombre..." />
+      </div>
       <div class="field-group">
         <label>Categoría:</label>
-        <asp:DropDownList ID="ddlCategoria" runat="server" CssClass="form-control"
-            AutoPostBack="true" CausesValidation="false"
-            OnSelectedIndexChanged="ddlCategoria_SelectedIndexChanged" />
+        <asp:TextBox ID="txtNewCatFull" runat="server"
+            CssClass="form-control" placeholder="Nombre..." />
       </div>
-      <asp:Panel ID="pnlAddCat" runat="server" Visible="false" style="margin-top:.5rem;">
-        <asp:TextBox ID="txtNewCat" runat="server" CssClass="form-control"
-            placeholder="Nueva categoría..." />
-        <asp:TextBox ID="txtNewCatDesc" runat="server" CssClass="form-control"
-            placeholder="Descripción (opcional)..." style="margin-top:.4rem;" />
-        <asp:Button ID="btnGuardarCat" runat="server" CssClass="greenbutton"
-            Text="Guardar categoría" OnClick="btnGuardarCat_Click"
-            CausesValidation="false" />
-      </asp:Panel>
-
       <div class="field-group">
         <label>Subcategoría:</label>
-        <asp:DropDownList ID="ddlSubcategoria" runat="server" CssClass="form-control"
-            AutoPostBack="true" OnSelectedIndexChanged="ddlSubcategoria_SelectedIndexChanged" />
-        <asp:RequiredFieldValidator runat="server" ControlToValidate="ddlSubcategoria"
-            InitialValue="" ErrorMessage="* Requerido" Display="Dynamic"
-            ValidationGroup="prod" CssClass="validator" />
+        <asp:TextBox ID="txtNewSubFull" runat="server"
+            CssClass="form-control" placeholder="Nombre..." />
       </div>
-      <asp:Panel ID="pnlAddSubcat" runat="server" Visible="false" style="margin-top:.5rem;">
-        <asp:TextBox ID="txtNewSubcat" runat="server" CssClass="form-control"
-            placeholder="Nueva subcategoría..." />
-        <asp:TextBox ID="txtNewSubcatDesc" runat="server" CssClass="form-control"
-            placeholder="Descripción (opcional)..." style="margin-top:.4rem;" />
-        <asp:Button ID="btnGuardarSubcat" runat="server" CssClass="greenbutton"
-            Text="Guardar subcategoría" OnClick="btnGuardarSubcat_Click"
-            CausesValidation="false" />
-      </asp:Panel>
+    </div>
+    <div style="text-align:center; margin-top:1rem;">
+      <asp:Button ID="btnAgregarSubFull" runat="server"
+          CssClass="greenbutton" Text="Agregar"
+           OnClick="btnAgregarSubFull_Click"
+      CausesValidation="false"  
+      ValidationGroup=""         
+   />
+    </div>
+  </fieldset>
+</asp:Panel>
+
 
       <!-- Tienda -->
       <div class="field-group">
@@ -238,11 +267,46 @@
   </fieldset>
 
   <!-- ================= EXISTENCIAS DINÁMICAS ================= -->
-  <fieldset class="section">
-    <legend>Existencias Iniciales</legend>
+  <asp:Panel ID="pnlExistencias" runat="server" CssClass="section">
+  <fieldset>
+    <legend>Existencias</legend>
     <div id="existenciasContainer"></div>
     <span id="btnAddExistencia" class="add-btn">+</span>
   </fieldset>
+</asp:Panel>
+
+<!-- Plantilla de fila de existencia -->
+<script type="text/html" id="historialTpl">
+  <div class="form-grid existencia-row" style="border:1px solid #ddd;padding:.5rem;margin-bottom:.5rem;">
+    <div class="field-group">
+      <label>Tienda salida:</label>
+      <select name="histTiendaSalida" class="form-control">${tiendaOptions}</select>
+    </div>
+    <div class="field-group">
+      <label>Tienda recibe:</label>
+      <select name="histTiendaRecibe" class="form-control">${tiendaOptions}</select>
+    </div>
+    <div class="field-group">
+      <label>Fecha:</label>
+      <input type="date" name="histFecha" class="form-control" value="${hoy}" />
+    </div>
+    <div class="field-group">
+      <label>Cantidad:</label>
+      <input type="number" name="histCantidad" class="form-control" />
+    </div>
+    <div class="field-group">
+      <label>Referencia:</label>
+      <input type="text" name="histReferencia" class="form-control" />
+    </div>
+    <div class="field-group">
+      <label>Estado:</label>
+      <select name="histEstado" class="form-control">
+        <option value="Entrada">Entrada</option>
+        <option value="Salida">Salida</option>
+      </select>
+    </div>
+  </div>
+</script>
 
   <!-- ================= IMAGEN ================= -->
   <fieldset class="section">
@@ -271,26 +335,6 @@
       ValidationGroup="prod" />
   </div>
 
- <!-- Plantilla de Existencias -->
-<script type="text/html" id="existenciaTpl">
-  <div class="form-grid existencia-row">
-    <div class="field-group">
-      <label>Color:</label>
-      <input class="form-control" type="text" name="exColor" />
-    </div>
-    <div class="field-group">
-      <label>Medida:</label>
-      <select class="form-control" name="exMedida">
-        ${medidasOptions}
-      </select>
-    </div>
-    <div class="field-group">
-      <label>Cantidad:</label>
-      <input class="form-control" type="number" name="exCant" />
-    </div>
-  </div>
-</script>
-
 <!-- Plantilla de Precios -->
 <script type="text/html" id="tarifaTpl">
   <div class="form-grid tarifa-row">
@@ -298,10 +342,7 @@
       <label>Tarifa:</label>
       <select name="tarifa" class="form-control"></select>
     </div>
-    <div class="field-group">
-      <label>Aplica en:</label>
-      <input class="form-control" type="text" name="aplicaEn" />
-    </div>
+
     <div class="field-group">
       <label>Cant. mínima:</label>
       <input class="form-control" type="number" name="cantMin" />
@@ -360,7 +401,7 @@
 
     // — EXISTENCIAS —
     function addExistenciaRow() {
-        var raw = document.getElementById('existenciaTpl').innerHTML;
+        var raw = document.getElementById('historialTpl').innerHTML;
         var filled = raw.replace('${medidasOptions}', medidasOptions);
         var div = document.createElement('div');
         div.innerHTML = filled;
