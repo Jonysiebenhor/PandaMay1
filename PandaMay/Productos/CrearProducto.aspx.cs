@@ -403,36 +403,75 @@ VALUES (@ic, @is, 1);", cn, tx))
 
         private void RegistrarOpcionesMedidas()
         {
-            // …generas tu sb con los <option>…
-            var sb = new StringBuilder();
+            // ——— Generar medidasOptions ———
+            var sbMedidas = new StringBuilder();
             using (var cn = new SqlConnection(_connString))
             using (var cmd = new SqlCommand(
-                "SELECT idmedida, tipomedida FROM dbo.MEDIDAS WHERE activo = 1 ORDER BY tipomedida",
-                cn))
+                "SELECT idmedida, tipomedida " +
+                "FROM dbo.MEDIDAS " +
+                "WHERE activo = 1 " +
+                "ORDER BY tipomedida", cn))
             {
                 cn.Open();
                 using (var dr = cmd.ExecuteReader())
+                {
                     while (dr.Read())
-                        sb.AppendFormat(
-                          "<option value=\"{0}\">{1}</option>",
-                          dr["idmedida"],
-                          dr["tipomedida"]
-                        );
+                    {
+                        sbMedidas.AppendFormat(
+                            "<option value=\"{0}\">{1}</option>",
+                            dr.GetInt32(dr.GetOrdinal("idmedida")),
+                            dr.GetString(dr.GetOrdinal("tipomedida")));
+                    }
+                }
             }
-
-            // Inyecta en JS sin volver a generar <script> tags
-            var script = $@"
+            var scriptMedidas = $@"
 <script type=""text/javascript"">
-  var medidasOptions = `{sb}`;
+  var medidasOptions = `{sbMedidas}`;
 </script>";
-
             ClientScript.RegisterStartupScript(
-              this.GetType(),    // tipo de la página
-              "medidasTpl",      // clave única
-              script,            // tu bloque de script
-              false              // <-- aquí
+                this.GetType(),
+                "medidasTpl",
+                scriptMedidas,
+                false
+            );
+
+            // ——— Generar supplierOptions (Proveedores ↔ Usuarios) ———
+            var sbProv = new StringBuilder();
+            using (var cn = new SqlConnection(_connString))
+            using (var cmd = new SqlCommand(@"
+SELECT 
+    p.idproveedor, 
+    u.nombrenegocio
+FROM dbo.Proveedores AS p
+INNER JOIN dbo.Usuarios AS u
+    ON p.idusuario = u.idusuario
+WHERE u.activo = 1
+ORDER BY u.nombrenegocio;", cn))
+            {
+                cn.Open();
+                using (var dr = cmd.ExecuteReader())
+                {
+                    while (dr.Read())
+                    {
+                        sbProv.AppendFormat(
+                            "<option value=\"{0}\">{1}</option>",
+                            dr.GetInt32(dr.GetOrdinal("idproveedor")),
+                            dr.GetString(dr.GetOrdinal("nombrenegocio")));
+                    }
+                }
+            }
+            var scriptProv = $@"
+<script type=""text/javascript"">
+  var supplierOptions = `{sbProv}`;
+</script>";
+            ClientScript.RegisterStartupScript(
+                this.GetType(),
+                "supplierOpts",
+                scriptProv,
+                false
             );
         }
+
 
 
         protected void ddlUnidad_SelectedIndexChanged(object s, EventArgs e)
@@ -519,7 +558,7 @@ VALUES (@ic, @is, 1);", cn, tx))
             var referencia = txtReferencia.Text.Trim();
             var cb = long.TryParse(txtCodigoBarras.Text.Trim(), out var tmpCb) ? tmpCb : 0L;
             var activo = chkActivo.Checked;
-            var tipo = txtTipo.Text.Trim();
+            var tipoProd = txtTipo.Text.Trim();
             var descuento = float.TryParse(txtDescuento.Text.Trim(), out var tmpD) ? tmpD : 0f;
 
             // —– Tarifas —–
@@ -530,7 +569,7 @@ VALUES (@ic, @is, 1);", cn, tx))
             var salidas = Request.Form.GetValues("histTiendaSalida") ?? new string[0];
             var recibos = Request.Form.GetValues("histTiendaRecibe") ?? new string[0];
             var fechas = Request.Form.GetValues("histFecha") ?? new string[0];
-            var cantidades = Request.Form.GetValues("histCantidad") ?? new string[0];
+            var cantidadesHist = Request.Form.GetValues("histCantidad") ?? new string[0];
             var referenciasHist = Request.Form.GetValues("histReferencia") ?? new string[0];
             var estados = Request.Form.GetValues("histEstado") ?? new string[0];
 
@@ -538,10 +577,16 @@ VALUES (@ic, @is, 1);", cn, tx))
         salidas.Length,
         recibos.Length,
         fechas.Length,
-        cantidades.Length,
+        cantidadesHist.Length,
         referenciasHist.Length,
         estados.Length
     }.Min();
+
+            // —– Precios de Compra —–
+            var compProvs = Request.Form.GetValues("compProveedor") ?? new string[0];
+            var compPrecios = Request.Form.GetValues("compPrecio") ?? new string[0];
+            var compFechas = Request.Form.GetValues("compFecha") ?? new string[0];
+            int compCount = new[] { compProvs.Length, compPrecios.Length, compFechas.Length }.Min();
 
             // —– Imagen —–
             byte[] imgBytes = null;
@@ -578,7 +623,7 @@ VALUES
                             cmd.Parameters.AddWithValue("@ref", referencia);
                             cmd.Parameters.AddWithValue("@cb", cb);
                             cmd.Parameters.AddWithValue("@act", activo);
-                            cmd.Parameters.AddWithValue("@tip", tipo);
+                            cmd.Parameters.AddWithValue("@tip", tipoProd);
                             cmd.Parameters.AddWithValue("@des", descuento);
                             newId = (int)cmd.ExecuteScalar();
                         }
@@ -599,7 +644,7 @@ VALUES (@tid, @pid, NULL, @med, @mar, @can, @f);", cn, tx))
                                 cmdE.Parameters.AddWithValue("@pid", newId);
                                 cmdE.Parameters.AddWithValue("@med", unidad);
                                 cmdE.Parameters.AddWithValue("@mar", marca);
-                                cmdE.Parameters.AddWithValue("@can", int.Parse(cantidades[i]));
+                                cmdE.Parameters.AddWithValue("@can", int.Parse(cantidadesHist[i]));
                                 cmdE.Parameters.AddWithValue("@f", DateTime.Parse(fechas[i]));
                                 idExist = (int)cmdE.ExecuteScalar();
                             }
@@ -615,7 +660,7 @@ VALUES (@eid, @f, @sal, @rec, @can, @ref, @est);", cn, tx))
                                 cmdH.Parameters.AddWithValue("@f", DateTime.Parse(fechas[i]));
                                 cmdH.Parameters.AddWithValue("@sal", int.Parse(salidas[i]));
                                 cmdH.Parameters.AddWithValue("@rec", int.Parse(recibos[i]));
-                                cmdH.Parameters.AddWithValue("@can", int.Parse(cantidades[i]));
+                                cmdH.Parameters.AddWithValue("@can", int.Parse(cantidadesHist[i]));
                                 cmdH.Parameters.AddWithValue("@ref", referenciasHist[i]);
                                 cmdH.Parameters.AddWithValue("@est", estados[i]);
                                 cmdH.ExecuteNonQuery();
@@ -676,6 +721,29 @@ UPDATE dbo.EXISTENCIAS
                             }
                         }
 
+                        // 5) INSERT en PRECIOSDECOMPRA
+                        const string sqlCompra = @"
+INSERT INTO dbo.PreciosDeCompra
+  (idproducto, idproveedor, precio, fecha)
+VALUES
+  (@pid, @prov, @precio, @fecha);";
+                        using (var cmdCompra = new SqlCommand(sqlCompra, cn, tx))
+                        {
+                            for (int i = 0; i < compCount; i++)
+                            {
+                                if (!int.TryParse(compProvs[i], out var provId)) continue;
+                                if (!decimal.TryParse(compPrecios[i], out var precio)) continue;
+                                if (!DateTime.TryParse(compFechas[i], out var fecha)) continue;
+
+                                cmdCompra.Parameters.Clear();
+                                cmdCompra.Parameters.AddWithValue("@pid", newId);
+                                cmdCompra.Parameters.AddWithValue("@prov", provId);
+                                cmdCompra.Parameters.AddWithValue("@precio", precio);
+                                cmdCompra.Parameters.AddWithValue("@fecha", fecha);
+                                cmdCompra.ExecuteNonQuery();
+                            }
+                        }
+
                         // Commit y salir
                         tx.Commit();
                         Response.Redirect("Productos.aspx");
@@ -688,6 +756,7 @@ UPDATE dbo.EXISTENCIAS
                 }
             }
         }
+
 
 
 

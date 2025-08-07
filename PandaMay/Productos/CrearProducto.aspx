@@ -275,6 +275,42 @@
   </fieldset>
 </asp:Panel>
 
+    <!-- ================= PRECIOS DE COMPRA ================= -->
+<asp:Panel ID="pnlPreciosCompra" runat="server" CssClass="section">
+  <fieldset>
+    <legend>Precios de compra</legend>
+    <div id="preciosCompraContainer"></div>
+    <span id="btnAddPrecioCompra" class="add-btn">+</span>
+  </fieldset>
+</asp:Panel>
+
+<!-- Plantilla de fila de Precio de Compra -->
+<script type="text/html" id="precioCompraTpl">
+  <div class="form-grid compra-row" style="border:1px solid #ddd; padding:.5rem; margin-bottom:.5rem;">
+      <div class="field-group">
+    <label>Proveedor:</label>
+    <select name="compProveedor" class="form-control">${supplierOptions}</select>
+  </div>
+
+    <div class="field-group">
+      <label>Precio:</label>
+      <input type="number" step="0.01" name="compPrecio" class="form-control" />
+    </div>
+    <div class="field-group">
+      <label>Activo:</label>
+      <select name="compActivo" class="form-control">
+        <option value="1">Sí</option>
+        <option value="0">No</option>
+      </select>
+    </div>
+    <div class="field-group">
+      <label>Fecha:</label>
+      <input type="date" name="compFecha" class="form-control" value="${hoy}" />
+    </div>
+  </div>
+</script>
+
+
 <!-- Plantilla de fila de existencia -->
 <script type="text/html" id="historialTpl">
   <div class="form-grid existencia-row" style="border:1px solid #ddd;padding:.5rem;margin-bottom:.5rem;">
@@ -399,7 +435,7 @@
         updateTarifaFilters();
     }
 
-    // — EXISTENCIAS —
+    // — EXISTENCIAS —  
     function addExistenciaRow() {
         var raw = document.getElementById('historialTpl').innerHTML;
         var filled = raw.replace('${medidasOptions}', medidasOptions);
@@ -408,26 +444,48 @@
         document.getElementById('existenciasContainer').appendChild(div);
     }
 
+    // — PRECIOS DE COMPRA —
+    function addPrecioCompraRow() {
+        var tpl = document.getElementById('precioCompraTpl').innerHTML;
+        var cont = document.getElementById('preciosCompraContainer');
+        var div = document.createElement('div');
+        div.innerHTML = tpl;
+        cont.appendChild(div);
+    }
+
     // — INICIALIZACIÓN ÚNICA —
     document.addEventListener('DOMContentLoaded', function () {
-        // Tarifas
+        // — Tarifas —
         var contP = document.getElementById('preciosContainer');
         contP.innerHTML = '';
         addTarifaRow();
         document.getElementById('btnAddTarifa')
             .addEventListener('click', function (e) {
-                e.preventDefault(); addTarifaRow();
+                e.preventDefault();
+                addTarifaRow();
             });
 
-        // Existencias
+        // — Existencias —
         var contE = document.getElementById('existenciasContainer');
         contE.innerHTML = '';
         addExistenciaRow();
         document.getElementById('btnAddExistencia')
             .addEventListener('click', function (e) {
-                e.preventDefault(); addExistenciaRow();
+                e.preventDefault();
+                addExistenciaRow();
+            });
+
+        // — Precios de compra —
+        var contC = document.getElementById('preciosCompraContainer');
+        contC.innerHTML = '';
+        addPrecioCompraRow();
+        document.getElementById('btnAddPrecioCompra')
+            .addEventListener('click', function (e) {
+                e.preventDefault();
+                addPrecioCompraRow();
             });
     });
 </script>
+
 
 </asp:Content>
