@@ -31,21 +31,36 @@
     position:center;
     text-align: center;
 }
-.textbox{
-    border: none;
+.textbox {
+    border: 1px solid #ccc !important;    
     border-radius: 25px;
-    Width:200px;
-    height:36px;
-    position:center;
-    text-align: center;
+    width: 200px;
+    height: 36px;
+    background-color: #fff;                
+    padding: .4rem;                        
+    box-sizing: border-box;              
 }
-.dropdownlist{
-    border: none;
-    border-radius: 25px;
-    Width:200px;
-    height:36px;
-    text-align: center;
+
+
+/* Selección única y múltiple */
+select.dropdownlist {
+  background-color: #fff !important;
+  border: 1px solid #ccc !important;
+  border-radius: 4px !important;
+  color: #333 !important;
+  padding: .4rem !important;
+  text-align: left !important;
+  width: 100% !important;
+  min-height: 2.5rem !important;
+  height: auto !important;
+  overflow-y: auto;
 }
+
+/* Cuando es múltiple (ListBox), fuerza más filas */
+select.dropdownlist[multiple] {
+  min-height: 8rem !important;
+}
+
 .greenbutton {
 background-color:#80cdbb;
 border: none;

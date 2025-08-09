@@ -15,6 +15,15 @@ namespace PandaMay.Productos
     {
 
         /// <summary>
+        /// Control smMain.
+        /// </summary>
+        /// <remarks>
+        /// Campo generado automáticamente.
+        /// Para modificarlo, mueva la declaración del campo del archivo del diseñador al archivo de código subyacente.
+        /// </remarks>
+        protected global::System.Web.UI.ScriptManager smMain;
+
+        /// <summary>
         /// Control vsSummary.
         /// </summary>
         /// <remarks>
@@ -78,49 +87,139 @@ namespace PandaMay.Productos
         protected global::System.Web.UI.WebControls.RequiredFieldValidator rfvSubcategoria;
 
         /// <summary>
-        /// Control pnlAddFullSubcat.
+        /// Control pnlNewSub.
         /// </summary>
         /// <remarks>
         /// Campo generado automáticamente.
         /// Para modificarlo, mueva la declaración del campo del archivo del diseñador al archivo de código subyacente.
         /// </remarks>
-        protected global::System.Web.UI.WebControls.Panel pnlAddFullSubcat;
+        protected global::System.Web.UI.WebControls.Panel pnlNewSub;
 
         /// <summary>
-        /// Control txtNewCatMFull.
+        /// Control txtNewSub.
         /// </summary>
         /// <remarks>
         /// Campo generado automáticamente.
         /// Para modificarlo, mueva la declaración del campo del archivo del diseñador al archivo de código subyacente.
         /// </remarks>
-        protected global::System.Web.UI.WebControls.TextBox txtNewCatMFull;
+        protected global::System.Web.UI.WebControls.TextBox txtNewSub;
 
         /// <summary>
-        /// Control txtNewCatFull.
+        /// Control rfvNewSub.
         /// </summary>
         /// <remarks>
         /// Campo generado automáticamente.
         /// Para modificarlo, mueva la declaración del campo del archivo del diseñador al archivo de código subyacente.
         /// </remarks>
-        protected global::System.Web.UI.WebControls.TextBox txtNewCatFull;
+        protected global::System.Web.UI.WebControls.RequiredFieldValidator rfvNewSub;
 
         /// <summary>
-        /// Control txtNewSubFull.
+        /// Control lstCategorias.
         /// </summary>
         /// <remarks>
         /// Campo generado automáticamente.
         /// Para modificarlo, mueva la declaración del campo del archivo del diseñador al archivo de código subyacente.
         /// </remarks>
-        protected global::System.Web.UI.WebControls.TextBox txtNewSubFull;
+        protected global::System.Web.UI.WebControls.ListBox lstCategorias;
 
         /// <summary>
-        /// Control btnAgregarSubFull.
+        /// Control rfvLstCat.
         /// </summary>
         /// <remarks>
         /// Campo generado automáticamente.
         /// Para modificarlo, mueva la declaración del campo del archivo del diseñador al archivo de código subyacente.
         /// </remarks>
-        protected global::System.Web.UI.WebControls.Button btnAgregarSubFull;
+        protected global::System.Web.UI.WebControls.RequiredFieldValidator rfvLstCat;
+
+        /// <summary>
+        /// Control btnAddSub.
+        /// </summary>
+        /// <remarks>
+        /// Campo generado automáticamente.
+        /// Para modificarlo, mueva la declaración del campo del archivo del diseñador al archivo de código subyacente.
+        /// </remarks>
+        protected global::System.Web.UI.WebControls.Button btnAddSub;
+
+        /// <summary>
+        /// Control pnlNewCat.
+        /// </summary>
+        /// <remarks>
+        /// Campo generado automáticamente.
+        /// Para modificarlo, mueva la declaración del campo del archivo del diseñador al archivo de código subyacente.
+        /// </remarks>
+        protected global::System.Web.UI.WebControls.Panel pnlNewCat;
+
+        /// <summary>
+        /// Control txtNewCat.
+        /// </summary>
+        /// <remarks>
+        /// Campo generado automáticamente.
+        /// Para modificarlo, mueva la declaración del campo del archivo del diseñador al archivo de código subyacente.
+        /// </remarks>
+        protected global::System.Web.UI.WebControls.TextBox txtNewCat;
+
+        /// <summary>
+        /// Control rfvNewCat.
+        /// </summary>
+        /// <remarks>
+        /// Campo generado automáticamente.
+        /// Para modificarlo, mueva la declaración del campo del archivo del diseñador al archivo de código subyacente.
+        /// </remarks>
+        protected global::System.Web.UI.WebControls.RequiredFieldValidator rfvNewCat;
+
+        /// <summary>
+        /// Control ddlCatMaestra2.
+        /// </summary>
+        /// <remarks>
+        /// Campo generado automáticamente.
+        /// Para modificarlo, mueva la declaración del campo del archivo del diseñador al archivo de código subyacente.
+        /// </remarks>
+        protected global::System.Web.UI.WebControls.DropDownList ddlCatMaestra2;
+
+        /// <summary>
+        /// Control btnAddCat.
+        /// </summary>
+        /// <remarks>
+        /// Campo generado automáticamente.
+        /// Para modificarlo, mueva la declaración del campo del archivo del diseñador al archivo de código subyacente.
+        /// </remarks>
+        protected global::System.Web.UI.WebControls.Button btnAddCat;
+
+        /// <summary>
+        /// Control pnlNewCatM.
+        /// </summary>
+        /// <remarks>
+        /// Campo generado automáticamente.
+        /// Para modificarlo, mueva la declaración del campo del archivo del diseñador al archivo de código subyacente.
+        /// </remarks>
+        protected global::System.Web.UI.WebControls.Panel pnlNewCatM;
+
+        /// <summary>
+        /// Control txtNewCatM.
+        /// </summary>
+        /// <remarks>
+        /// Campo generado automáticamente.
+        /// Para modificarlo, mueva la declaración del campo del archivo del diseñador al archivo de código subyacente.
+        /// </remarks>
+        protected global::System.Web.UI.WebControls.TextBox txtNewCatM;
+
+        /// <summary>
+        /// Control rfvNewCatM.
+        /// </summary>
+        /// <remarks>
+        /// Campo generado automáticamente.
+        /// Para modificarlo, mueva la declaración del campo del archivo del diseñador al archivo de código subyacente.
+        /// </remarks>
+        protected global::System.Web.UI.WebControls.RequiredFieldValidator rfvNewCatM;
+
+        /// <summary>
+        /// Control btnAddCatM.
+        /// </summary>
+        /// <remarks>
+        /// Campo generado automáticamente.
+        /// Para modificarlo, mueva la declaración del campo del archivo del diseñador al archivo de código subyacente.
+        /// </remarks>
+        protected global::System.Web.UI.WebControls.Button btnAddCatM;
 
         /// <summary>
         /// Control ddlTienda.

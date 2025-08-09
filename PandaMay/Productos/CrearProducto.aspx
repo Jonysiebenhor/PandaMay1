@@ -31,6 +31,7 @@
 </asp:Content>
 
 <asp:Content ID="Content3" ContentPlaceHolderID="body" runat="server">
+    <asp:ScriptManager ID="smMain" runat="server" EnablePageMethods="true" />
   <h2>Agregar un nuevo producto</h2>
   <!-- Validaciones -->
   <asp:ValidationSummary ID="vsSummary" runat="server" CssClass="validator"
@@ -38,10 +39,15 @@
   <asp:Label ID="lblError" runat="server" CssClass="validator" Visible="false" />
 
   <!-- Regresar -->
-  <asp:Button ID="btnRegresar" runat="server"
-    CssClass="bluebutton"
-    Text="Regresar"
-    OnClientClick="window.history.back(); return false;" />
+  <asp:Button
+    ID="btnRegresar"
+    runat="server"
+    CssClass="orangebutton"
+    Text="← Regresar"
+    CausesValidation="false"
+    UseSubmitBehavior="false"
+    OnClientClick="location.href='Productos.aspx'; return false;" />
+
 
   <!-- ================= DATOS PRINCIPALES ================= -->
 <fieldset class="section">
@@ -49,82 +55,181 @@
   <div class="form-grid">
 
     <!-- Categoría maestra (sólo lectura) -->
-    <div class="field-group">
-      <label>Categoría maestra:</label>
-      <asp:DropDownList
-          ID="ddlCatMaestra"
-          runat="server"
-          CssClass="form-control"
-          Enabled="false" />
-    </div>
+   <div class="field-group">
+  <label>Categoría maestra:</label>
+  <asp:DropDownList ID="ddlCatMaestra"
+      runat="server"
+      CssClass="dropdownlist"
+      Enabled="false" />
+</div>
 
     <!-- Categoría (sólo lectura) -->
     <div class="field-group">
       <label>Categoría:</label>
-      <asp:DropDownList
-          ID="ddlCategoria"
-          runat="server"
-          CssClass="form-control"
-          Enabled="false" />
+       <asp:DropDownList
+        ID="ddlCategoria"
+        runat="server"
+       CssClass="dropdownlist"
+        Enabled="false" />
     </div>
 
-    <!-- Subcategoría (selección activa + opción “Agregar”) -->
+   <!-- Subcategoría (selección activa + opción “Agregar”) -->
+<div class="field-group">
+  <label>Subcategoría:</label>
+  <asp:DropDownList
+      ID="ddlSubcategoria"
+      runat="server"
+      CssClass="dropdownlist"
+      AutoPostBack="true"
+      OnSelectedIndexChanged="ddlSubcategoria_SelectedIndexChanged">
+    <asp:ListItem Text="-- Seleccione subcategoría --" Value="" />
+    <asp:ListItem Text="+ Agregar subcategoría" Value="new" />
+    <%-- Items cargados en CargarSubcategorias() --%>
+  </asp:DropDownList>
+  <asp:RequiredFieldValidator
+      ID="rfvSubcategoria"
+      runat="server"
+      ControlToValidate="ddlSubcategoria"
+      InitialValue=""
+      ErrorMessage="* Requerido"
+      Display="Dynamic"
+      ValidationGroup="prod"
+      CssClass="validator" />
+</div>
+
+<!-- Panel para nueva Subcategoría -->
+<asp:Panel ID="pnlNewSub" runat="server" Visible="false" CssClass="section">
+  <div class="form-grid">
+    <!-- Columna 1: Input de Subcategoría -->
     <div class="field-group">
-      <label>Subcategoría:</label>
-      <asp:DropDownList
-          ID="ddlSubcategoria"
-          runat="server"
-          CssClass="form-control"
-          AutoPostBack="true"
-          OnSelectedIndexChanged="ddlSubcategoria_SelectedIndexChanged">
-      </asp:DropDownList>
-      <asp:RequiredFieldValidator
-          ID="rfvSubcategoria"
-          runat="server"
-          ControlToValidate="ddlSubcategoria"
-          InitialValue=""
+      <label>Ingrese Subcategoría:</label>
+       <asp:TextBox ID="txtNewSub" runat="server" CssClass="textbox" />
+       <asp:RequiredFieldValidator
+           ID="rfvNewSub"
+           runat="server"
+           ControlToValidate="txtNewSub"
           ErrorMessage="* Requerido"
           Display="Dynamic"
-          ValidationGroup="prod"
+          ValidationGroup="subcat"
+           CssClass="validator" />
+    </div>
+
+
+    <!-- Columna 2: Selección múltiple de Categorías -->
+    <div class="field-group">
+      <label>Seleccione Categorías asociadas:</label>
+     <asp:ListBox ID="lstCategorias" runat="server" CssClass="dropdownlist"
+           SelectionMode="Multiple" AutoPostBack="true"
+           OnSelectedIndexChanged="lstCategorias_SelectedIndexChanged"
+           Rows="6">
+        <%-- Items cargados en CargarCategoriasListBox() --%>
+      </asp:ListBox>
+      <asp:RequiredFieldValidator
+           ID="rfvLstCat"
+           runat="server"
+           ControlToValidate="lstCategorias"
+           InitialValue=""
+           ErrorMessage="* Seleccione al menos una"
+           Display="Dynamic"
+           ValidationGroup="subcat"
+           CssClass="validator" />
+    </div>
+  </div>
+
+  <!-- Botón centrado -->
+  <div style="text-align:center; margin-top:1rem;">
+    <asp:Button ID="btnAddSub" runat="server" CssClass="greenbutton"
+         Text="Guardar Subcategoría"
+         OnClick="btnAddSub_Click"
+         ValidationGroup="subcat"
+         CausesValidation="true" />
+  </div>
+</asp:Panel>
+
+<!-- Panel para nueva Categoría -->
+<asp:Panel ID="pnlNewCat" runat="server" Visible="false" CssClass="section">
+  <div class="form-grid">
+    <!-- Input de nueva Categoría -->
+    <div class="field-group">
+      <label>Ingrese Categoría:</label>
+      <asp:TextBox
+          ID="txtNewCat"
+          runat="server"
+          CssClass="textbox" />
+      <asp:RequiredFieldValidator
+          ID="rfvNewCat"
+          runat="server"
+          ControlToValidate="txtNewCat"
+          ErrorMessage="* Requerido"
+          Display="Dynamic"
+          ValidationGroup="cat"
           CssClass="validator" />
     </div>
 
+    <!-- Dropdown de Maestra -->
+    <div class="field-group">
+      <label>Seleccione Categoría Maestra:</label>
+      <asp:DropDownList
+          ID="ddlCatMaestra2"
+          runat="server"
+          CssClass="dropdownlist"
+         AutoPostBack="true"
+           OnSelectedIndexChanged="ddlCatMaestra2_SelectedIndexChanged"
+           ValidationGroup="cat">
+        <asp:ListItem Text="-- Seleccione maestra --" Value="" />
+        <asp:ListItem Text="+ Agregar maestra" Value="new" />
+        <%-- Items cargados en CargarCatMaestra2() --%>
+      </asp:DropDownList>
+    </div>
   </div>
-</fieldset>
 
-<!-- Panel para crear Cat. Maestra → Cat. → Subcat. -->
-<asp:Panel ID="pnlAddFullSubcat" runat="server"
-    Visible="false" CssClass="section" style="margin-top:1rem;">
-  <fieldset>
-    <legend>Agregar nueva jerarquía</legend>
-    <div class="form-grid">
-      <!-- Sólo: Nombre de Maestra, Nombre de Categoría, Nombre de Subcategoría -->
-      <div class="field-group">
-        <label>Cat. Maestra:</label>
-        <asp:TextBox ID="txtNewCatMFull" runat="server"
-            CssClass="form-control" placeholder="Nombre..." />
-      </div>
-      <div class="field-group">
-        <label>Categoría:</label>
-        <asp:TextBox ID="txtNewCatFull" runat="server"
-            CssClass="form-control" placeholder="Nombre..." />
-      </div>
-      <div class="field-group">
-        <label>Subcategoría:</label>
-        <asp:TextBox ID="txtNewSubFull" runat="server"
-            CssClass="form-control" placeholder="Nombre..." />
-      </div>
-    </div>
-    <div style="text-align:center; margin-top:1rem;">
-      <asp:Button ID="btnAgregarSubFull" runat="server"
-          CssClass="greenbutton" Text="Agregar"
-           OnClick="btnAgregarSubFull_Click"
-      CausesValidation="false"  
-      ValidationGroup=""         
-   />
-    </div>
-  </fieldset>
+  <!-- Botón centrado -->
+  <div style="text-align:center; margin-top:1rem;">
+    <asp:Button
+        ID="btnAddCat"
+        runat="server"
+        CssClass="greenbutton"
+        Text="Guardar Categoría"
+        OnClick="btnAddCat_Click"
+        ValidationGroup="cat" />
+  </div>
 </asp:Panel>
+
+<!-- Panel para nueva Categoría Maestra -->
+<asp:Panel ID="pnlNewCatM" runat="server" Visible="false" CssClass="section"  ValidationGroup="catm">
+  <div class="form-grid">
+    <div class="field-group">
+      <label>Ingrese Categoría Maestra:</label>
+      <asp:TextBox
+          ID="txtNewCatM"
+          runat="server"
+          CssClass="textbox" />
+      <asp:RequiredFieldValidator
+          ID="rfvNewCatM"
+          runat="server"
+          ControlToValidate="txtNewCatM"
+          ErrorMessage="* Requerido"
+          Display="Dynamic"
+          ValidationGroup="catm"
+          CssClass="validator" />
+    </div>
+  </div>
+
+  <!-- Botón centrado -->
+  <div style="text-align:center; margin-top:1rem;">
+    <asp:Button
+        ID="btnAddCatM"
+        runat="server"
+        CssClass="greenbutton"
+        Text="Guardar Maestra"
+        OnClick="btnAddCatM_Click"
+        ValidationGroup="catm"
+        CausesValidation="true" />
+  </div>
+</asp:Panel>
+
+
+
 
 
       <!-- Tienda -->
@@ -166,7 +271,7 @@
   <%-- ítem por defecto --%>
   <asp:ListItem Text="-- Marca --" Value="" />
   <%-- opción para agregar una nueva --%>
-  <asp:ListItem Text="-- Agregar nueva marca --" Value="-1" />
+  <asp:ListItem Text="-- Agregar nueva marca --" Value="0" />
 </asp:DropDownList>
 
         <asp:RequiredFieldValidator ID="rfvMarca" runat="server"
@@ -284,65 +389,69 @@
   </fieldset>
 </asp:Panel>
 
-<!-- Plantilla de fila de Precio de Compra -->
 <script type="text/html" id="precioCompraTpl">
   <div class="form-grid compra-row" style="border:1px solid #ddd; padding:.5rem; margin-bottom:.5rem;">
-      <div class="field-group">
-    <label>Proveedor:</label>
-    <select name="compProveedor" class="form-control">${supplierOptions}</select>
-  </div>
+    <!-- Proveedor -->
+    <div class="field-group">
+      <label>Proveedor:</label>
+      <select name="compProveedor" class="dropdownlist proveedor-select">
+        <option value="">-- Proveedores --</option>
+        <option value="new">+ Agregar proveedor</option>
+        ${supplierOptions}
+      </select>
 
+      <!-- Mini-form de alta de proveedor (oculto por defecto) -->
+      <div class="add-proveedor" style="display:none; margin-top:.5rem;">
+        <input type="text" class="textbox nuevo-prov-nombre" placeholder="Nombre del proveedor..." />
+        <button type="button" class="greenbutton btn-guardar-prov">Guardar</button>
+        <button type="button" class="orangebutton btn-cancelar-prov">Cancelar</button>
+      </div>
+    </div>
+
+    <!-- Precio -->
     <div class="field-group">
       <label>Precio:</label>
-      <input type="number" step="0.01" name="compPrecio" class="form-control" />
+      <input type="number" step="0.01" name="compPrecio" class="textbox" />
     </div>
+
+    <!-- Activo -->
     <div class="field-group">
       <label>Activo:</label>
-      <select name="compActivo" class="form-control">
+      <select name="compActivo" class="dropdownlist">
         <option value="1">Sí</option>
         <option value="0">No</option>
       </select>
     </div>
+
+    <!-- Fecha -->
     <div class="field-group">
       <label>Fecha:</label>
-      <input type="date" name="compFecha" class="form-control" value="${hoy}" />
+      <input type="date" name="compFecha" class="textbox" value="${hoy}" />
     </div>
   </div>
 </script>
 
 
-<!-- Plantilla de fila de existencia -->
+
+    <!-- Plantilla de fila de Existencia: sólo Medida + Cantidad -->
 <script type="text/html" id="historialTpl">
   <div class="form-grid existencia-row" style="border:1px solid #ddd;padding:.5rem;margin-bottom:.5rem;">
     <div class="field-group">
-      <label>Tienda salida:</label>
-      <select name="histTiendaSalida" class="form-control">${tiendaOptions}</select>
-    </div>
-    <div class="field-group">
-      <label>Tienda recibe:</label>
-      <select name="histTiendaRecibe" class="form-control">${tiendaOptions}</select>
-    </div>
-    <div class="field-group">
-      <label>Fecha:</label>
-      <input type="date" name="histFecha" class="form-control" value="${hoy}" />
+      <label>Medida:</label>
+      <select name="histMedida" class="form-control">
+        <option value="">-- Medida --</option>
+        ${medidasOptions}
+      </select>
     </div>
     <div class="field-group">
       <label>Cantidad:</label>
       <input type="number" name="histCantidad" class="form-control" />
     </div>
-    <div class="field-group">
-      <label>Referencia:</label>
-      <input type="text" name="histReferencia" class="form-control" />
-    </div>
-    <div class="field-group">
-      <label>Estado:</label>
-      <select name="histEstado" class="form-control">
-        <option value="Entrada">Entrada</option>
-        <option value="Salida">Salida</option>
-      </select>
-    </div>
   </div>
 </script>
+
+
+
 
   <!-- ================= IMAGEN ================= -->
   <fieldset class="section">
@@ -434,58 +543,224 @@
         sel.addEventListener('change', onTarifaChange);
         updateTarifaFilters();
     }
-
+ 
     // — EXISTENCIAS —  
     function addExistenciaRow() {
+        // 1) tomo la plantilla
         var raw = document.getElementById('historialTpl').innerHTML;
+        // 2) substituyo el placeholder por la variable JS medidasOptions
         var filled = raw.replace('${medidasOptions}', medidasOptions);
+        // 3) lo convierto en nodo y lo añado al contenedor
         var div = document.createElement('div');
         div.innerHTML = filled;
         document.getElementById('existenciasContainer').appendChild(div);
     }
 
+
+
     // — PRECIOS DE COMPRA —
     function addPrecioCompraRow() {
         var tpl = document.getElementById('precioCompraTpl').innerHTML;
+        // ¡Importante! Inyectamos supplierOptions y hoy en el HTML
+        var filled = tpl
+            .replace('${supplierOptions}', (typeof supplierOptions !== 'undefined' ? supplierOptions : ''))
+            .replace('${hoy}', (typeof hoy !== 'undefined' ? hoy : ''));
+
         var cont = document.getElementById('preciosCompraContainer');
         var div = document.createElement('div');
-        div.innerHTML = tpl;
+        div.innerHTML = filled;
         cont.appendChild(div);
+
+        // Conectamos eventos del proveedor en esta fila
+        wireProveedorRow(div);
     }
 
-    // — INICIALIZACIÓN ÚNICA —
-    document.addEventListener('DOMContentLoaded', function () {
-        // — Tarifas —
-        var contP = document.getElementById('preciosContainer');
-        contP.innerHTML = '';
-        addTarifaRow();
-        document.getElementById('btnAddTarifa')
-            .addEventListener('click', function (e) {
-                e.preventDefault();
+  
+    
+/* ==================== PROVEEDORES: wire + alta en vivo ==================== */
+
+        function wireProveedorRow(row) {
+  var sel        = row.querySelector('.proveedor-select');
+        var panel      = row.querySelector('.add-proveedor');
+        var txt        = row.querySelector('.nuevo-prov-nombre');
+        var btnGuardar = row.querySelector('.btn-guardar-prov');
+        var btnCancel  = row.querySelector('.btn-cancelar-prov');
+
+        if (!sel) return;
+
+        // Mostrar el mini-form cuando eligen "+ Agregar proveedor"
+        sel.addEventListener('change', function () {
+    if (sel.value === 'new') {
+            panel.style.display = 'block';
+        if (txt) txt.focus();
+    } else {
+            panel.style.display = 'none';
+    }
+  });
+
+        // Guardar nuevo proveedor
+        if (btnGuardar) {
+            btnGuardar.addEventListener('click', function () {
+                guardarNuevoProveedor(row);
+            });
+  }
+
+        // Permitir Enter dentro del textbox para guardar
+        if (txt) {
+            txt.addEventListener('keydown', function (e) {
+                if (e.key === 'Enter') {
+                    e.preventDefault();
+                    if (btnGuardar) btnGuardar.click();
+                }
+            });
+  }
+
+        // Cancelar alta rápida
+        if (btnCancel) {
+            btnCancel.addEventListener('click', function () {
+                panel.style.display = 'none';
+                sel.value = ''; // obligamos a volver a elegir
+            });
+  }
+}
+
+        // Llama al WebMethod AddProveedor y actualiza TODOS los selects sin recargar
+        function guardarNuevoProveedor(row) {
+  var txt        = row.querySelector('.nuevo-prov-nombre');
+        var sel        = row.querySelector('.proveedor-select');
+        var panel      = row.querySelector('.add-proveedor');
+        var btnGuardar = row.querySelector('.btn-guardar-prov');
+
+        if (!txt || !sel) return;
+
+        var nombre = (txt.value || '').trim();
+        if (!nombre) {
+            alert('Escribe el nombre del proveedor.');
+        txt.focus();
+        return;
+  }
+
+        // Evitar doble click
+        if (btnGuardar) {
+    if (btnGuardar.disabled) return;
+        btnGuardar.disabled = true;
+  }
+
+  // Requiere: <asp: ScriptManager EnablePageMethods="true" />
+        PageMethods.AddProveedor(nombre,
+        function (result) {
+      // success
+      if (!result || !result.id) {
+            alert('No se recibió un ID válido del servidor.');
+        if (btnGuardar) btnGuardar.disabled = false;
+        return;
+      }
+
+      // Insertar en el <select> actual justo después de "new"
+            var opt = document.createElement('option');
+            opt.value = result.id;
+            opt.textContent = result.nombre;
+
+      if (sel.options.length > 0) {
+                sel.insertBefore(opt, sel.options[1] || null); // después de "new"
+      } else {
+                sel.appendChild(opt);
+      }
+            sel.value = result.id;
+
+            // Propagar a TODOS los combos de proveedor de la página
+            document.querySelectorAll('.proveedor-select').forEach(function (otro) {
+        if ([...otro.options].some(o => o.value === String(result.id))) return; // ya existe
+            var o2 = document.createElement('option');
+            o2.value = result.id;
+            o2.textContent = result.nombre;
+
+        if (otro.options.length > 0) {
+                otro.insertBefore(o2, otro.options[1] || null);
+        } else {
+                otro.appendChild(o2);
+        }
+      });
+
+            // Actualizar la variable global supplierOptions para futuras filas
+            if (typeof supplierOptions !== 'undefined') {
+                supplierOptions = `<option value="${result.id}">${result.nombre}</option>` + supplierOptions;
+      }
+
+            // Cerrar mini-form y limpiar
+            panel.style.display = 'none';
+            txt.value = '';
+
+            if (btnGuardar) btnGuardar.disabled = false;
+    },
+            function (err) {
+      // error
+      var msg = (err && err.get_message) ? err.get_message() : 'Error al crear proveedor';
+            alert(msg);
+            if (btnGuardar) btnGuardar.disabled = false;
+    }
+            );
+}
+
+            /* ==================== INICIALIZACIÓN ==================== */
+            document.addEventListener('DOMContentLoaded', function () {
+  // — Tarifas —
+  try {
+    var contP = document.getElementById('preciosContainer');
+            if (contP) {
+                contP.innerHTML = '';
+            if (typeof addTarifaRow === 'function') {
                 addTarifaRow();
-            });
+            var btnAddTarifa = document.getElementById('btnAddTarifa');
+            if (btnAddTarifa) {
+                btnAddTarifa.addEventListener('click', function (e) {
+                    e.preventDefault();
+                    addTarifaRow();
+                });
+        }
+      }
+    }
+  } catch (e) { /* noop */}
 
-        // — Existencias —
-        var contE = document.getElementById('existenciasContainer');
-        contE.innerHTML = '';
-        addExistenciaRow();
-        document.getElementById('btnAddExistencia')
-            .addEventListener('click', function (e) {
-                e.preventDefault();
+  // — Existencias —
+            try {
+    var contE = document.getElementById('existenciasContainer');
+            if (contE) {
+                contE.innerHTML = '';
+            if (typeof addExistenciaRow === 'function') {
                 addExistenciaRow();
-            });
+            var btnAddExistencia = document.getElementById('btnAddExistencia');
+            if (btnAddExistencia) {
+                btnAddExistencia.addEventListener('click', function (e) {
+                    e.preventDefault();
+                    addExistenciaRow();
+                });
+        }
+      }
+    }
+  } catch (e) { /* noop */}
 
-        // — Precios de compra —
-        var contC = document.getElementById('preciosCompraContainer');
-        contC.innerHTML = '';
-        addPrecioCompraRow();
-        document.getElementById('btnAddPrecioCompra')
-            .addEventListener('click', function (e) {
-                e.preventDefault();
+  // — Precios de compra —
+            try {
+    var contC = document.getElementById('preciosCompraContainer');
+            if (contC) {
+                contC.innerHTML = '';
+            if (typeof addPrecioCompraRow === 'function') {
+                // addPrecioCompraRow debe llamar internamente a wireProveedorRow(row)
                 addPrecioCompraRow();
-            });
-    });
+            var btnAddPrecioCompra = document.getElementById('btnAddPrecioCompra');
+            if (btnAddPrecioCompra) {
+                btnAddPrecioCompra.addEventListener('click', function (e) {
+                    e.preventDefault();
+                    addPrecioCompraRow(); // idem
+                });
+        }
+      }
+    }
+  } catch (e) { /* noop */}
+});
 </script>
+
 
 
 </asp:Content>
