@@ -13,6 +13,8 @@
 
 <asp:Content ID="Content2" ContentPlaceHolderID="head" runat="server">
   <style>
+      .invalid { border-color:#e74c3c !important; box-shadow:0 0 0 2px rgba(231,76,60,.15); }
+  .field-error { color:#e74c3c; font-size:.9rem; margin-top:.25rem; }
     .form-grid        { display:grid; grid-template-columns:1fr 1fr; gap:1rem; }
     .field-group      { display:flex; flex-direction:column; }
     .field-group label{ font-weight:bold; margin-bottom:.25rem; }
@@ -474,10 +476,11 @@
 
   <!-- ================= GUARDAR ================= -->
   <div style="text-align:center; margin-top:2rem;">
-    <asp:Button ID="btnGuardarProducto" runat="server"
-      CssClass="greenbutton" Text="Guardar Producto"
-      OnClick="btnGuardarProducto_Click"
-      ValidationGroup="prod" />
+   <asp:Button ID="btnGuardarProducto" runat="server"
+  CssClass="greenbutton" Text="Guardar Producto"
+  OnClick="btnGuardarProducto_Click"
+  ValidationGroup="prod"
+  OnClientClick="return validarAntesDeGuardar();" />
   </div>
 
 <!-- Plantilla de Precios -->
@@ -757,6 +760,117 @@
   } catch (e) { /* noop */}
 });
 </script>
+    <script>
+        (function () {
+            function addError(el, msg) {
+                if (!el) return;
+                el.classList.add('invalid');
+                var fg = el.closest('.field-group') || el.parentElement;
+                if (fg) {
+                    var err = fg.querySelector('.field-error');
+                    if (!err) {
+                        err = document.createElement('div');
+                        err.className = 'field-error';
+                        fg.appendChild(err);
+                    }
+                    err.textContent = msg || 'Campo requerido';
+                }
+            }
+
+            function clearErrors(scope) {
+                (scope || document).querySelectorAll('.invalid').forEach(n => n.classList.remove('invalid'));
+                (scope || document).querySelectorAll('.field-error').forEach(n => n.remove());
+            }
+
+            function attachAutoClear() {
+                document.querySelectorAll('input, select, textarea').forEach(function (el) {
+                    el.addEventListener('input', function () {
+                        el.classList.remove('invalid');
+                        var fe = (el.closest('.field-group') || el.parentElement).querySelector('.field-error'); if (fe) fe.remove();
+                    });
+                    el.addEventListener('change', function () {
+                        el.classList.remove('invalid');
+                        var fe = (el.closest('.field-group') || el.parentElement).querySelector('.field-error'); if (fe) fe.remove();
+                    });
+                });
+            }
+            attachAutoClear();
+
+            window.validarAntesDeGuardar = function () {
+                clearErrors();
+                var ok = true, firstBad = null;
+
+                // ---- Controles principales (server) ----
+                var ddlUnidad = document.getElementById('<%= ddlUnidad.ClientID %>');
+      var ddlMarca = document.getElementById('<%= ddlMarca.ClientID %>');
+      var ddlTienda = document.getElementById('<%= ddlTienda.ClientID %>');
+      var ddlSubcat = document.getElementById('<%= ddlSubcategoria.ClientID %>');
+    var ddlPublico    = document.getElementById('<%= ddlPublico.ClientID %>');
+    var txtNombre     = document.getElementById('<%= txtNombre.ClientID %>');
+    var txtCB         = document.getElementById('<%= txtCodigoBarras.ClientID %>');
+
+                function need(el, msg) {
+                    if (!el || !el.value) { ok = false; addError(el, msg); if (!firstBad) firstBad = el; }
+                }
+                need(txtNombre, 'Ingrese el nombre');
+                need(txtCB, 'Ingrese código de barras');
+                need(ddlUnidad, 'Seleccione una unidad');
+                need(ddlMarca, 'Seleccione una marca');
+                need(ddlTienda, 'Seleccione una tienda');
+                need(ddlSubcat, 'Seleccione subcategoría');
+                need(ddlPublico, 'Seleccione un tipo de público');
+
+                // ---- Existencias dinámicas ----
+                var exRows = document.querySelectorAll('#existenciasContainer .existencia-row');
+                if (exRows.length === 0) {
+                    ok = false;
+                    // Marca el contenedor si no hay filas
+                    var contE = document.querySelector('#existenciasContainer');
+                    addError(contE, 'Agregue al menos una existencia');
+                    if (!firstBad) firstBad = contE;
+                } else {
+                    exRows.forEach(function (r) {
+                        var med = r.querySelector('select[name="histMedida"]');
+                        var cant = r.querySelector('input[name="histCantidad"]');
+                        if (!med || !med.value) { ok = false; addError(med, 'Seleccione medida'); if (!firstBad) firstBad = med; }
+                        if (!cant || +cant.value <= 0) { ok = false; addError(cant, 'Cantidad > 0'); if (!firstBad) firstBad = cant; }
+                    });
+                }
+
+                // ---- Tarifas dinámicas (2 o más) ----
+                var tRows = document.querySelectorAll('#preciosContainer .tarifa-row');
+                if (tRows.length < 2) {
+                    ok = false;
+                    var contT = document.querySelector('#preciosContainer');
+                    addError(contT, 'Agregue al menos 2 tarifas');
+                    if (!firstBad) firstBad = contT;
+                }
+                tRows.forEach(function (r) {
+                    var sel = r.querySelector('select[name="tarifa"]');
+                    var p = r.querySelector('input[name="precioVal"]');
+                    if (!sel || !sel.value) { ok = false; addError(sel, 'Seleccione tarifa'); if (!firstBad) firstBad = sel; }
+                    if (!p || +p.value <= 0) { ok = false; addError(p, 'Precio > 0'); if (!firstBad) firstBad = p; }
+                });
+
+                // ---- Precios de compra (si hay fila, validar precio) ----
+                var cRows = document.querySelectorAll('#preciosCompraContainer .compra-row');
+                cRows.forEach(function (r) {
+                    var precio = r.querySelector('input[name="compPrecio"]');
+                    if (precio && precio.value !== '' && +precio.value <= 0) {
+                        ok = false; addError(precio, 'Precio > 0'); if (!firstBad) firstBad = precio;
+                    }
+                });
+
+                if (!ok && firstBad) {
+                    // Llevar la vista al primer error
+                    firstBad.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                    firstBad.focus({ preventScroll: true });
+                }
+
+                return ok; // true => permite postback, false => lo cancela (se conserva la imagen/filas)
+            };
+        })();
+    </script>
 
 
 
