@@ -507,9 +507,9 @@
         tarifaData.forEach(function (t) {
             opts += '<option value="' + t.id + '">' + t.nombre + ' (' + t.cantidad + ')</option>';
         });
-        opts += '<option value="new">➕ Agregar nueva tarifa</option>';
-        return opts;
+        return opts; // ← ya no agregamos la opción "new"
     }
+
 
     function updateTarifaFilters() {
         var selects = Array.from(document.querySelectorAll('select[name="tarifa"]'));
@@ -525,12 +525,9 @@
     }
 
     function onTarifaChange(e) {
-        if (e.target.value === 'new') {
-            document.getElementById('<%= pnlAddTarifa.ClientID %>').style.display = 'block';
-        } else {
-            updateTarifaFilters();
-        }
+        updateTarifaFilters(); // solo recalcula deshabilitados; no muestra panel
     }
+
 
     function addTarifaRow() {
         var tpl = document.getElementById('tarifaTpl').innerHTML;

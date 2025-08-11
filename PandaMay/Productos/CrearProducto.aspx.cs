@@ -704,7 +704,7 @@ SELECT idsubcategoria, nombre
             var tarifas = Request.Form.GetValues("tarifa") ?? Array.Empty<string>();
             var precioVal = Request.Form.GetValues("precioVal") ?? Array.Empty<string>();
 
-            // —– Existencias (simplificado: Medida + Cantidad) —–
+            // —– Existencias (Medida + Cantidad) —–
             var medidas = Request.Form.GetValues("histMedida") ?? Array.Empty<string>();
             var cantidades = Request.Form.GetValues("histCantidad") ?? Array.Empty<string>();
             int filas = Math.Min(medidas.Length, cantidades.Length);
@@ -734,7 +734,7 @@ SELECT idsubcategoria, nombre
                 {
                     try
                     {
-                        // 1) INSERT en PRODUCTOS → newId
+                        // 1) PRODUCTOS → newId
                         int newId;
                         using (var cmd = new SqlCommand(@"
 INSERT INTO dbo.PRODUCTOS
@@ -755,7 +755,7 @@ VALUES
                             newId = (int)cmd.ExecuteScalar();
                         }
 
-                        // 2) EXISTENCIAS (solo Medida + Cantidad)
+                        // 2) EXISTENCIAS (por cada Medida+Cantidad)
                         var existenciasIds = new List<int>();
                         for (int i = 0; i < filas; i++)
                         {
@@ -777,32 +777,41 @@ VALUES (@tid, @pid, NULL, @med, @mar, @can, GETDATE());", cn, tx))
                                 idExist = (int)cmdE.ExecuteScalar();
                             }
                             existenciasIds.Add(idExist);
+
+                            // 2.1) Enlazar PÚBLICO a cada existencia (si aplica el modelo)
+                            using (var cmdEP = new SqlCommand(@"
+INSERT INTO dbo.EXISTENCIASPUBLICOS (idexistencia, idpublico, activo)
+VALUES (@eid, @pid, 1);", cn, tx))
+                            {
+                                cmdEP.Parameters.AddWithValue("@eid", idExist);
+                                cmdEP.Parameters.AddWithValue("@pid", idPublico);
+                                cmdEP.ExecuteNonQuery();
+                            }
                         }
-                        // (Ya NO insertamos en HISTORIALESEXISTENCIAS)
+
+                        if (existenciasIds.Count == 0)
+                            throw new Exception("Debe registrar al menos una existencia (medida y cantidad).");
 
                         // 3) PRECIOS DE VENTA (sobre la primera existencia)
-                        if (existenciasIds.Count > 0)
-                        {
-                            int existenciaPrincipal = existenciasIds[0];
-                            const string sqlPrecios = @"
+                        int existenciaPrincipal = existenciasIds[0];
+                        const string sqlPrecios = @"
 INSERT INTO dbo.PRECIOS
   (idexistencia, idnombreprecio, precio, activo, fecha)
 VALUES
   (@idexistencia, @idnombreprecio, @precio, 1, GETDATE());";
-                            using (var cmdPrecio = new SqlCommand(sqlPrecios, cn, tx))
+                        using (var cmdPrecio = new SqlCommand(sqlPrecios, cn, tx))
+                        {
+                            for (int i = 0; i < tarifas.Length; i++)
                             {
-                                for (int i = 0; i < tarifas.Length; i++)
-                                {
-                                    if (!int.TryParse(tarifas[i], out var idNomPre) || idNomPre <= 0) continue;
-                                    if (i >= precioVal.Length) continue;
-                                    if (!decimal.TryParse(precioVal[i], out var p)) continue;
+                                if (!int.TryParse(tarifas[i], out var idNomPre) || idNomPre <= 0) continue;
+                                if (i >= precioVal.Length) continue;
+                                if (!decimal.TryParse(precioVal[i], out var p)) continue;
 
-                                    cmdPrecio.Parameters.Clear();
-                                    cmdPrecio.Parameters.AddWithValue("@idexistencia", existenciaPrincipal);
-                                    cmdPrecio.Parameters.AddWithValue("@idnombreprecio", idNomPre);
-                                    cmdPrecio.Parameters.AddWithValue("@precio", p);
-                                    cmdPrecio.ExecuteNonQuery();
-                                }
+                                cmdPrecio.Parameters.Clear();
+                                cmdPrecio.Parameters.AddWithValue("@idexistencia", existenciaPrincipal);
+                                cmdPrecio.Parameters.AddWithValue("@idnombreprecio", idNomPre);
+                                cmdPrecio.Parameters.AddWithValue("@precio", p);
+                                cmdPrecio.ExecuteNonQuery();
                             }
                         }
 
@@ -835,29 +844,33 @@ UPDATE dbo.EXISTENCIAS
                             }
                         }
 
-                        // 5) PRECIOS DE COMPRA
+                        // 5) PRECIOS DE COMPRA (tabla real: dbo.PRECIOSCOMPRAS, usa idexistencia)
                         const string sqlCompra = @"
-INSERT INTO dbo.PreciosDeCompra
-  (idproducto, idproveedor, precio, fecha)
+INSERT INTO dbo.PRECIOSCOMPRAS
+  (idexistencia, descripcion, precio, fecha)
 VALUES
-  (@pid, @prov, @precio, @fecha);";
+  (@eid, @desc, @precio, @fecha);";
                         using (var cmdCompra = new SqlCommand(sqlCompra, cn, tx))
                         {
                             for (int i = 0; i < compCount; i++)
                             {
-                                var provRaw = (compProvs[i] ?? "").Trim();
-                                if (string.IsNullOrEmpty(provRaw) || provRaw == "new") continue;
-                                if (!int.TryParse(provRaw, out var provId) || provId <= 0) continue;
-                                if (!decimal.TryParse(compPrecios[i], out var precio)) continue;
+                                if (!decimal.TryParse(compPrecios[i], out var precioCompra)) continue;
 
-                                if (!DateTime.TryParse(compFechas[i], out var fecha))
-                                    fecha = DateTime.Today;
+                                DateTime fechaCompra;
+                                if (!DateTime.TryParse(compFechas[i], out fechaCompra))
+                                    fechaCompra = DateTime.Today;
+
+                                // Como tu tabla no tiene idproveedor, lo dejamos (opcional) en descripción
+                                var provRaw = (compProvs[i] ?? "").Trim();
+                                string descProv = (!string.IsNullOrEmpty(provRaw) && provRaw != "new")
+                                                  ? "ProveedorId:" + provRaw
+                                                  : null;
 
                                 cmdCompra.Parameters.Clear();
-                                cmdCompra.Parameters.AddWithValue("@pid", newId);
-                                cmdCompra.Parameters.AddWithValue("@prov", provId);
-                                cmdCompra.Parameters.AddWithValue("@precio", precio);
-                                cmdCompra.Parameters.AddWithValue("@fecha", fecha);
+                                cmdCompra.Parameters.AddWithValue("@eid", existenciaPrincipal);
+                                cmdCompra.Parameters.AddWithValue("@desc", (object)descProv ?? DBNull.Value);
+                                cmdCompra.Parameters.AddWithValue("@precio", precioCompra);
+                                cmdCompra.Parameters.AddWithValue("@fecha", fechaCompra);
                                 cmdCompra.ExecuteNonQuery();
                             }
                         }
@@ -874,6 +887,7 @@ VALUES
                 }
             }
         }
+
 
 
         private void MostrarError(string msg)
