@@ -51,22 +51,22 @@ namespace PandaMay.Productos
         protected global::System.Web.UI.WebControls.Button btnRegresar;
 
         /// <summary>
-        /// Control ddlCatMaestra.
+        /// Control lstCategoriasRO.
         /// </summary>
         /// <remarks>
         /// Campo generado automáticamente.
         /// Para modificarlo, mueva la declaración del campo del archivo del diseñador al archivo de código subyacente.
         /// </remarks>
-        protected global::System.Web.UI.WebControls.DropDownList ddlCatMaestra;
+        protected global::System.Web.UI.WebControls.ListBox lstCategoriasRO;
 
         /// <summary>
-        /// Control ddlCategoria.
+        /// Control lstMaestrasRO.
         /// </summary>
         /// <remarks>
         /// Campo generado automáticamente.
         /// Para modificarlo, mueva la declaración del campo del archivo del diseñador al archivo de código subyacente.
         /// </remarks>
-        protected global::System.Web.UI.WebControls.DropDownList ddlCategoria;
+        protected global::System.Web.UI.WebControls.ListBox lstMaestrasRO;
 
         /// <summary>
         /// Control ddlSubcategoria.

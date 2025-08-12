@@ -174,23 +174,36 @@ namespace PandaMay.Productos
             }
         }
 
-        private void CargarCategoriasListBox()
+        private void CargarCategoriasListBox(int? idMaestra = null)
         {
             lstCategorias.Items.Clear();
-            // **Agrega primero la opción de nuevo**
             lstCategorias.Items.Add(new ListItem("+ Agregar categoría", "new"));
+
+            string sql = idMaestra.HasValue
+                ? @"SELECT c.idcategoria, c.nombre
+              FROM dbo.CATEGORIAS c
+              JOIN dbo.CATEGORIASMAESTRASCATEGORIAS mc ON mc.idcategoria = c.idcategoria
+             WHERE c.activo=1 AND mc.idcategoriamaestra=@idm
+             ORDER BY c.nombre"
+                : @"SELECT idcategoria, nombre
+              FROM dbo.CATEGORIAS
+             WHERE activo=1
+             ORDER BY nombre";
+
             using (var cn = new SqlConnection(_connString))
-            using (var cmd = new SqlCommand(
-                "SELECT idcategoria,nombre FROM dbo.CATEGORIAS WHERE activo=1 ORDER BY nombre", cn))
+            using (var cmd = new SqlCommand(sql, cn))
             {
+                if (idMaestra.HasValue) cmd.Parameters.AddWithValue("@idm", idMaestra.Value);
                 cn.Open();
                 using (var dr = cmd.ExecuteReader())
                     while (dr.Read())
                         lstCategorias.Items.Add(new ListItem(
                             dr.GetString(1),
-                            dr.GetInt32(0).ToString()));
+                            dr.GetInt32(0).ToString()
+                        ));
             }
         }
+
 
 
         private void CargarCatMaestra2()
@@ -271,7 +284,7 @@ namespace PandaMay.Productos
         /// </summary>
         private void MostrarCategoriaYMaestraReadOnly(int idSub)
         {
-            // 1) Carga categorías ligadas y rellena ddlCategoria
+            // 1) Cargar categorías ligadas a la subcategoría
             var categorias = new List<Tuple<int, string>>();
             using (var cn = new SqlConnection(_connString))
             using (var cmd = new SqlCommand(@"
@@ -279,54 +292,53 @@ namespace PandaMay.Productos
           FROM dbo.CATEGORIAS c
           JOIN dbo.CATEGORIASSUBCATEGORIAS cs 
             ON c.idcategoria = cs.idcategoria
-         WHERE cs.idsubcategoria = @idSub", cn))
+         WHERE cs.idsubcategoria = @idSub
+         ORDER BY c.nombre;", cn))
             {
                 cmd.Parameters.AddWithValue("@idSub", idSub);
                 cn.Open();
                 using (var dr = cmd.ExecuteReader())
                     while (dr.Read())
-                        categorias.Add(Tuple.Create(
-                            dr.GetInt32(0),
-                            dr.GetString(1)
-                        ));
+                        categorias.Add(Tuple.Create(dr.GetInt32(0), dr.GetString(1)));
             }
 
-            ddlCategoria.Items.Clear();
+            // Bind a la lista de categorías (solo lectura, multiselección)
+            lstCategoriasRO.Items.Clear();
             foreach (var cat in categorias)
-                ddlCategoria.Items.Add(new ListItem(cat.Item2, cat.Item1.ToString()));
-            if (ddlCategoria.Items.Count > 0)
-                ddlCategoria.SelectedIndex = 0;
-            ddlCategoria.Enabled = false;
+                lstCategoriasRO.Items.Add(new ListItem(cat.Item2, cat.Item1.ToString()) { Selected = true });
+            lstCategoriasRO.Enabled = false;
 
-            // 2) Si hay al menos una categoría, buscamos su maestra
-            if (categorias.Count > 0)
+            // 2) Cargar maestras (distintas) de esas categorías
+            var maestras = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+            using (var cn = new SqlConnection(_connString))
+            using (var cmd = new SqlCommand(@"
+        SELECT cm.nombre
+          FROM dbo.CATEGORIASMAESTRASCATEGORIAS mc
+          JOIN dbo.CATEGORIASMAESTRAS cm 
+            ON mc.idcategoriamaestra = cm.idcategoriamaestra
+         WHERE mc.idcategoria = @idCat;", cn))
             {
-                int idCat = categorias[0].Item1;
-                using (var cn = new SqlConnection(_connString))
-                using (var cmd = new SqlCommand(@"
-            SELECT cm.idcategoriamaestra, cm.nombre
-              FROM dbo.CATEGORIASMAESTRASCATEGORIAS mc
-              JOIN dbo.CATEGORIASMAESTRAS cm 
-                ON mc.idcategoriamaestra = cm.idcategoriamaestra
-             WHERE mc.idcategoria = @idCat", cn))
+                cmd.Parameters.Add("@idCat", SqlDbType.Int);
+                cn.Open();
+                foreach (var cat in categorias)
                 {
-                    cmd.Parameters.AddWithValue("@idCat", idCat);
-                    cn.Open();
-                    using (var dr = cmd.ExecuteReader())
-                    {
-                        ddlCatMaestra.Items.Clear();
-                        if (dr.Read())
-                        {
-                            var idMaestra = dr.GetInt32(0);
-                            var nombreMaestra = dr.GetString(1);
-                            ddlCatMaestra.Items.Add(new ListItem(nombreMaestra, idMaestra.ToString()));
-                            ddlCatMaestra.SelectedIndex = 0;
-                        }
-                    }
+                    cmd.Parameters["@idCat"].Value = cat.Item1;
+                    var nombre = cmd.ExecuteScalar() as string;
+                    if (!string.IsNullOrWhiteSpace(nombre))
+                        maestras.Add(nombre);
                 }
             }
-            ddlCatMaestra.Enabled = false;
+
+            // Bind a la lista de maestras
+            lstMaestrasRO.Items.Clear();
+            foreach (var m in maestras.OrderBy(x => x))
+                lstMaestrasRO.Items.Add(new ListItem(m, m) { Selected = true });
+            lstMaestrasRO.Enabled = false;
+
+            // Ocultar paneles de “nuevo”
+            pnlNewSub.Visible = pnlNewCat.Visible = pnlNewCatM.Visible = false;
         }
+
 
 
 
@@ -442,21 +454,32 @@ SELECT idsubcategoria, nombre
 
         protected void ddlCatMaestra2_SelectedIndexChanged(object sender, EventArgs e)
         {
-            // Si el usuario eligió "+ Agregar maestra"
+            // Mantener visible el panel de "Nueva Categoría" tras el postback
+            pnlNewCat.Visible = true;
+
+            // Si el usuario eligió "+ Agregar maestra", mostrar ese panel
             if (ddlCatMaestra2.SelectedValue == "new")
             {
-                // Limpio el textbox y muestro el panel de nueva maestra
                 txtNewCatM.Text = "";
-                pnlNewCatM.Visible = true;
-                // Opcional: ocultar el panel de nueva categoría
-                pnlNewCat.Visible = false;
+                pnlNewCatM.Visible = true;   // abrir panel de nueva maestra
+                                             // NO ocultes pnlNewCat: el usuario ya escribió la categoría
+                                             // Opcional: foco en la nueva maestra
+                txtNewCatM.Focus();
+                return;
             }
-            else
+
+            // Cualquier otra maestra seleccionada: ocultar el panel de nueva maestra
+            pnlNewCatM.Visible = false;
+
+            // (Opcional) si quieres filtrar el ListBox de categorías por la maestra elegida en el panel de subcategoría
+            if (int.TryParse(ddlCatMaestra2.SelectedValue, out var idM) && idM > 0)
             {
-                // Cualquier otro valor, oculto el panel
-                pnlNewCatM.Visible = false;
+                CargarCategoriasListBox(idM);  // usa la sobrecarga que filtra por maestra
+                                               // NO toques pnlNewSub aquí: no queremos cerrar el flujo actual
             }
         }
+
+
 
 
         protected void btnAddCatM_Click(object sender, EventArgs e)
@@ -478,38 +501,82 @@ SELECT idsubcategoria, nombre
             ddlCatMaestra2.SelectedValue = idNew.ToString();
             pnlNewCatM.Visible = false;
             txtNewCatM.Text = "";
+            CargarCategoriasListBox(idNew);   // refresca lista (vacía por ahora) asociada a la nueva maestra
+
         }
 
         protected void btnAddCat_Click(object sender, EventArgs e)
         {
             var nom = txtNewCat.Text.Trim();
-            if (nom == "" || ddlCatMaestra2.SelectedValue == "") return;
+            if (string.IsNullOrWhiteSpace(nom))
+            {
+                MostrarError("Escribe el nombre de la categoría.");
+                return;
+            }
+
+            if (!int.TryParse(ddlCatMaestra2.SelectedValue, out var idMaestra) || idMaestra <= 0)
+            {
+                MostrarError("Selecciona una categoría maestra válida.");
+                return;
+            }
+
             int idCat;
+
+            // Insert categoría + relación con la maestra en una sola transacción
             using (var cn = new SqlConnection(_connString))
-            using (var cmd = new SqlCommand(@"
-        INSERT INTO dbo.CATEGORIAS (nombre,activo,fecha)
-        OUTPUT INSERTED.idcategoria
-        VALUES(@n,1,GETDATE())", cn))
             {
-                cmd.Parameters.AddWithValue("@n", nom);
                 cn.Open();
-                idCat = (int)cmd.ExecuteScalar();
+                using (var tx = cn.BeginTransaction())
+                {
+                    try
+                    {
+                        using (var cmd = new SqlCommand(@"
+INSERT INTO dbo.CATEGORIAS (nombre, activo, fecha)
+OUTPUT INSERTED.idcategoria
+VALUES (@n, 1, GETDATE());", cn, tx))
+                        {
+                            cmd.Parameters.AddWithValue("@n", nom);
+                            idCat = (int)cmd.ExecuteScalar();
+                        }
+
+                        using (var cmd = new SqlCommand(@"
+INSERT INTO dbo.CATEGORIASMAESTRASCATEGORIAS
+  (idcategoriamaestra, idcategoria, activo)
+VALUES
+  (@idm, @ic, 1);", cn, tx))
+                        {
+                            cmd.Parameters.AddWithValue("@idm", idMaestra);
+                            cmd.Parameters.AddWithValue("@ic", idCat);
+                            cmd.ExecuteNonQuery();
+                        }
+
+                        tx.Commit();
+                    }
+                    catch (Exception ex)
+                    {
+                        try { tx.Rollback(); } catch { }
+                        MostrarError("No se pudo crear la categoría: " + ex.Message);
+                        return;
+                    }
+                }
             }
-            using (var cn = new SqlConnection(_connString))
-            using (var cmd = new SqlCommand(@"
-        INSERT INTO dbo.CATEGORIASMAESTRASCATEGORIAS
-          (idcategoriamaestra,idcategoria,activo)
-        VALUES(@idm,@ic,1)", cn))
-            {
-                cmd.Parameters.AddWithValue("@idm", int.Parse(ddlCatMaestra2.SelectedValue));
-                cmd.Parameters.AddWithValue("@ic", idCat);
-                cn.Open();
-                cmd.ExecuteNonQuery();
-            }
-            CargarCategoriasListBox();
+
+            // Recarga el ListBox de categorías filtrado por la maestra seleccionada
+            CargarCategoriasListBox(idMaestra);   
+
+            // Preselecciona la categoría recién creada
+            var nuevo = lstCategorias.Items.FindByValue(idCat.ToString());
+            if (nuevo != null) nuevo.Selected = true;
+
+            
             pnlNewCat.Visible = false;
+            pnlNewSub.Visible = true;
             txtNewCat.Text = "";
+
+            // (opcional) foco en la lista
+            lstCategorias.Focus();
         }
+
 
         protected void btnAddSub_Click(object sender, EventArgs e)
         {

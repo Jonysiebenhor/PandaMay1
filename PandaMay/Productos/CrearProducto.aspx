@@ -29,6 +29,9 @@
     .greenbutton      { background:#2ecc71; color:#fff; padding:.5rem 1rem;
                        border:none; border-radius:4px; }
     .form-control     { padding:.4rem; border:1px solid #ccc; border-radius:4px; }
+    select.dropdownlist[multiple] option:checked{
+    background:#80cdbb !important; color:#fff !important;
+  }
   </style>
 </asp:Content>
 
@@ -56,24 +59,20 @@
   <legend>Datos de Producto</legend>
   <div class="form-grid">
 
-    <!-- Categoría maestra (sólo lectura) -->
-   <div class="field-group">
-  <label>Categoría maestra:</label>
-  <asp:DropDownList ID="ddlCatMaestra"
-      runat="server"
-      CssClass="dropdownlist"
-      Enabled="false" />
+   
+<div class="field-group">
+  <label>Categorías (asociadas a la subcategoría):</label>
+  <asp:ListBox ID="lstCategoriasRO" runat="server"
+               CssClass="dropdownlist" SelectionMode="Multiple"
+               Enabled="false" Rows="3" />
 </div>
 
-    <!-- Categoría (sólo lectura) -->
-    <div class="field-group">
-      <label>Categoría:</label>
-       <asp:DropDownList
-        ID="ddlCategoria"
-        runat="server"
-       CssClass="dropdownlist"
-        Enabled="false" />
-    </div>
+<div class="field-group">
+  <label>Categoría(s) maestra(s):</label>
+  <asp:ListBox ID="lstMaestrasRO" runat="server"
+               CssClass="dropdownlist" SelectionMode="Multiple"
+               Enabled="false" Rows="2" />
+</div>
 
    <!-- Subcategoría (selección activa + opción “Agregar”) -->
 <div class="field-group">
@@ -502,7 +501,7 @@
   </div>
 </script>
 
-<!-- Lógica JS única para Precios y Existencias (reemplaza aquí) -->
+<!-- Lógica JS única para Precios y Existencias -->
 <script type="text/javascript">
     // ——— PRECIOS ———
     function buildTarifaOptions() {
@@ -760,6 +759,25 @@
   } catch (e) { /* noop */}
 });
 </script>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', function () {
+            var lb = document.getElementById('<%= lstCategorias.ClientID %>');
+    if (!lb) return;
+
+    lb.addEventListener('mousedown', function (e) {
+        var opt = e.target;
+        if (opt && opt.tagName === 'OPTION') {
+            if (opt.value === 'new') return; // aquí sí quieres el postback para abrir el panel
+            e.preventDefault();              // evita el cambio “normal” (y el postback)
+            opt.selected = !opt.selected;    // togglear sin Ctrl
+            
+        }
+    });
+});
+    </script>
+
+
     <script>
         (function () {
             function addError(el, msg) {
