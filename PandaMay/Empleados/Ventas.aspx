@@ -9,6 +9,10 @@
 <p class="centrado">
   <asp:Button ID="Button1" CssClass="greenbutton" runat="server" OnClick="Button1_Click"  Text="Nueva Venta"/>
   <asp:Button ID="Button2" CssClass="greenbutton" runat="server" OnClick="Button2_Click"  Text="Cierre diario"/>
+       <asp:HyperLink ID="lnkRegresar" runat="server"
+CssClass="orangebutton"
+Text="Regresar"
+NavigateUrl="~/Login.aspx" />
 </p>
                   </div>
 </asp:Content>

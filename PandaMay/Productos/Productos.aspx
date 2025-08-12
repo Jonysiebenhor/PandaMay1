@@ -73,8 +73,11 @@
 
     <!-- Cabecera: botones y buscador -->
     <div style="display:flex; justify-content:center; align-items:center; gap:10px; margin:30px 0;">
-      <asp:Button ID="btnRegresar" runat="server" CssClass="orangebutton"
-        Text="Regresar" OnClientClick="window.history.back(); return false;" />
+     <asp:HyperLink ID="lnkRegresar" runat="server"
+  CssClass="orangebutton"
+  Text="Regresar"
+  NavigateUrl="~/Login.aspx" />
+
 
       <asp:Button ID="btnCrearProducto" runat="server" CssClass="greenbutton"
         Text="Crear Producto" OnClick="btnCrearProducto_Click" />
@@ -148,9 +151,21 @@
           </div>
 
           <div style="overflow-x:auto; margin-bottom:20px;">
-            <asp:GridView ID="gvPreciosCompras" runat="server" AutoGenerateColumns="true"
-              GridLines="Both" BorderColor="#ccc" BorderWidth="1px" Width="100%" />
-          </div>
+  <asp:GridView ID="gvPreciosCompras" runat="server"
+      AutoGenerateColumns="false"
+      ShowHeaderWhenEmpty="True"
+      EmptyDataText="Sin precios de compra registrados."
+      GridLines="Both" BorderColor="#ccc" BorderWidth="1px" Width="100%">
+    <HeaderStyle BackColor="Black" ForeColor="White" Font-Bold="True" />
+    <Columns>
+      <asp:BoundField DataField="Proveedor" HeaderText="Proveedor" />
+      <asp:BoundField DataField="Precio" HeaderText="Precio" DataFormatString="{0:C}" HtmlEncode="false" />
+      <asp:BoundField DataField="Fecha" HeaderText="Fecha" DataFormatString="{0:dd/MM/yyyy}" HtmlEncode="false" />
+    </Columns>
+  </asp:GridView>
+</div>
+
+
           <div style="overflow-x:auto; margin-bottom:20px;">
             <asp:GridView ID="gvAtributos" runat="server" AutoGenerateColumns="true"
               GridLines="Both" BorderColor="#ccc" BorderWidth="1px" Width="100%" />

@@ -24,13 +24,13 @@ namespace PandaMay.Productos
         protected global::System.Web.UI.WebControls.Panel pnlTabla;
 
         /// <summary>
-        /// Control btnRegresar.
+        /// Control lnkRegresar.
         /// </summary>
         /// <remarks>
         /// Campo generado automáticamente.
         /// Para modificarlo, mueva la declaración del campo del archivo del diseñador al archivo de código subyacente.
         /// </remarks>
-        protected global::System.Web.UI.WebControls.Button btnRegresar;
+        protected global::System.Web.UI.WebControls.HyperLink lnkRegresar;
 
         /// <summary>
         /// Control btnCrearProducto.
