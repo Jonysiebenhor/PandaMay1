@@ -76,7 +76,7 @@
      <asp:HyperLink ID="lnkRegresar" runat="server"
   CssClass="orangebutton"
   Text="Regresar"
-  NavigateUrl="~/Login.aspx" />
+  NavigateUrl="~/empleados/menuempl.aspx" />
 
 
       <asp:Button ID="btnCrearProducto" runat="server" CssClass="greenbutton"

@@ -12,7 +12,7 @@
        <asp:HyperLink ID="lnkRegresar" runat="server"
 CssClass="orangebutton"
 Text="Regresar"
-NavigateUrl="~/Login.aspx" />
+NavigateUrl="~/empleados/menuempl.aspx" />
 </p>
                   </div>
 </asp:Content>
