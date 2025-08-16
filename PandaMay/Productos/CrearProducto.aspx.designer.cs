@@ -240,51 +240,6 @@ namespace PandaMay.Productos
         protected global::System.Web.UI.WebControls.RequiredFieldValidator rfvTienda;
 
         /// <summary>
-        /// Control ddlUnidad.
-        /// </summary>
-        /// <remarks>
-        /// Campo generado automáticamente.
-        /// Para modificarlo, mueva la declaración del campo del archivo del diseñador al archivo de código subyacente.
-        /// </remarks>
-        protected global::System.Web.UI.WebControls.DropDownList ddlUnidad;
-
-        /// <summary>
-        /// Control rfvUnidad.
-        /// </summary>
-        /// <remarks>
-        /// Campo generado automáticamente.
-        /// Para modificarlo, mueva la declaración del campo del archivo del diseñador al archivo de código subyacente.
-        /// </remarks>
-        protected global::System.Web.UI.WebControls.RequiredFieldValidator rfvUnidad;
-
-        /// <summary>
-        /// Control pnlAddUnidad.
-        /// </summary>
-        /// <remarks>
-        /// Campo generado automáticamente.
-        /// Para modificarlo, mueva la declaración del campo del archivo del diseñador al archivo de código subyacente.
-        /// </remarks>
-        protected global::System.Web.UI.WebControls.Panel pnlAddUnidad;
-
-        /// <summary>
-        /// Control txtNewUnidad.
-        /// </summary>
-        /// <remarks>
-        /// Campo generado automáticamente.
-        /// Para modificarlo, mueva la declaración del campo del archivo del diseñador al archivo de código subyacente.
-        /// </remarks>
-        protected global::System.Web.UI.WebControls.TextBox txtNewUnidad;
-
-        /// <summary>
-        /// Control btnGuardarUnidad.
-        /// </summary>
-        /// <remarks>
-        /// Campo generado automáticamente.
-        /// Para modificarlo, mueva la declaración del campo del archivo del diseñador al archivo de código subyacente.
-        /// </remarks>
-        protected global::System.Web.UI.WebControls.Button btnGuardarUnidad;
-
-        /// <summary>
         /// Control ddlMarca.
         /// </summary>
         /// <remarks>
@@ -292,15 +247,6 @@ namespace PandaMay.Productos
         /// Para modificarlo, mueva la declaración del campo del archivo del diseñador al archivo de código subyacente.
         /// </remarks>
         protected global::System.Web.UI.WebControls.DropDownList ddlMarca;
-
-        /// <summary>
-        /// Control rfvMarca.
-        /// </summary>
-        /// <remarks>
-        /// Campo generado automáticamente.
-        /// Para modificarlo, mueva la declaración del campo del archivo del diseñador al archivo de código subyacente.
-        /// </remarks>
-        protected global::System.Web.UI.WebControls.RequiredFieldValidator rfvMarca;
 
         /// <summary>
         /// Control pnlAddMarca.
@@ -465,15 +411,6 @@ namespace PandaMay.Productos
         protected global::System.Web.UI.WebControls.Button btnGuardarTarifa;
 
         /// <summary>
-        /// Control pnlExistencias.
-        /// </summary>
-        /// <remarks>
-        /// Campo generado automáticamente.
-        /// Para modificarlo, mueva la declaración del campo del archivo del diseñador al archivo de código subyacente.
-        /// </remarks>
-        protected global::System.Web.UI.WebControls.Panel pnlExistencias;
-
-        /// <summary>
         /// Control pnlPreciosCompra.
         /// </summary>
         /// <remarks>
@@ -481,6 +418,15 @@ namespace PandaMay.Productos
         /// Para modificarlo, mueva la declaración del campo del archivo del diseñador al archivo de código subyacente.
         /// </remarks>
         protected global::System.Web.UI.WebControls.Panel pnlPreciosCompra;
+
+        /// <summary>
+        /// Control pnlExistencias.
+        /// </summary>
+        /// <remarks>
+        /// Campo generado automáticamente.
+        /// Para modificarlo, mueva la declaración del campo del archivo del diseñador al archivo de código subyacente.
+        /// </remarks>
+        protected global::System.Web.UI.WebControls.Panel pnlExistencias;
 
         /// <summary>
         /// Control ddlImgColor.
@@ -492,13 +438,13 @@ namespace PandaMay.Productos
         protected global::System.Web.UI.WebControls.DropDownList ddlImgColor;
 
         /// <summary>
-        /// Control fuImagen.
+        /// Control fuImagenes.
         /// </summary>
         /// <remarks>
         /// Campo generado automáticamente.
         /// Para modificarlo, mueva la declaración del campo del archivo del diseñador al archivo de código subyacente.
         /// </remarks>
-        protected global::System.Web.UI.WebControls.FileUpload fuImagen;
+        protected global::System.Web.UI.WebControls.FileUpload fuImagenes;
 
         /// <summary>
         /// Control txtImgDesc.
@@ -508,14 +454,5 @@ namespace PandaMay.Productos
         /// Para modificarlo, mueva la declaración del campo del archivo del diseñador al archivo de código subyacente.
         /// </remarks>
         protected global::System.Web.UI.WebControls.TextBox txtImgDesc;
-
-        /// <summary>
-        /// Control btnGuardarProducto.
-        /// </summary>
-        /// <remarks>
-        /// Campo generado automáticamente.
-        /// Para modificarlo, mueva la declaración del campo del archivo del diseñador al archivo de código subyacente.
-        /// </remarks>
-        protected global::System.Web.UI.WebControls.Button btnGuardarProducto;
     }
 }

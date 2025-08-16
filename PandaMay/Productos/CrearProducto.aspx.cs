@@ -23,35 +23,35 @@ namespace PandaMay.Productos
 
         protected void Page_Load(object sender, EventArgs e)
         {
-            // ——— Traer tarifas para dropdown dinámico (se ejecuta SIEMPRE) ———
+            // ——— Traer tarifas para dropdown dinámico (sin 'cantidad') ———
             var listaTarifas = new List<object>();
             using (var cn = new SqlConnection(_connString))
             using (var cmd = new SqlCommand(
-                "SELECT idnombreprecio, nombre, cantidad FROM dbo.nombresPrecios WHERE activo = 1", cn))
+                "SELECT idnombreprecio, nombre FROM dbo.NOMBRESPRECIOS WHERE activo = 1 ORDER BY nombre", cn))
             {
                 cn.Open();
                 using (var dr = cmd.ExecuteReader())
+                {
                     while (dr.Read())
+                    {
                         listaTarifas.Add(new
                         {
                             id = dr.GetInt32(0),
-                            nombre = dr.GetString(1),
-                            cantidad = dr.GetInt32(2)
+                            nombre = dr.GetString(1)
                         });
+                    }
+                }
             }
+
             var jsonTarifas = new System.Web.Script.Serialization.JavaScriptSerializer()
                                    .Serialize(listaTarifas);
             var script = $@"
 <script type=""text/javascript"">
   var tarifaData = {jsonTarifas};
 </script>";
-            ClientScript.RegisterClientScriptBlock(
-                this.GetType(),
-                "tarifaData",
-                script,
-                false
-            );
+            ClientScript.RegisterClientScriptBlock(this.GetType(), "tarifaData", script, false);
 
+            // ——— Medidas y proveedores para plantillas dinámicas ———
             RegistrarOpcionesMedidas();
 
             // ——— Inyectar tiendas y fecha de hoy en el cliente ———
@@ -61,10 +61,12 @@ namespace PandaMay.Productos
             {
                 cn.Open();
                 using (var dr = cmd.ExecuteReader())
+                {
                     while (dr.Read())
                         sbT.AppendFormat("<option value=\"{0}\">{1}</option>",
                                          dr.GetInt32(0),
                                          dr.GetString(1));
+                }
             }
             string fechaHoy = DateTime.Today.ToString("yyyy-MM-dd");
             var scriptTiendas = $@"
@@ -81,76 +83,70 @@ namespace PandaMay.Productos
                 CargarPublicos();
                 CargarCategoriasListBox();   // llena lstCategorias
                 CargarCatMaestra2();         // llena ddlCatMaestra2
-
             }
         }
-
 
         private void CargarListas()
         {
-            using (var cn = new SqlConnection(_connString))
+            try
             {
-                cn.Open();
+                using (var cn = new SqlConnection(_connString))
+                {
+                    cn.Open();
 
-                // 2) TIENDAS
-                ddlTienda.Items.Clear();
-                ddlTienda.Items.Add(new ListItem("-- Tienda --", ""));
-                using (var cmd2 = new SqlCommand(
-                    "SELECT idtienda,nombre FROM dbo.TIENDAS WHERE activo=1", cn))
-                using (var dr2 = cmd2.ExecuteReader())
-                    while (dr2.Read())
-                        ddlTienda.Items.Add(new ListItem(
-                            dr2["nombre"].ToString(),
-                            dr2["idtienda"].ToString()));
+                    // TIENDAS
+                    ddlTienda.Items.Clear();
+                    ddlTienda.Items.Add(new ListItem("-- Tienda --", ""));
+                    using (var cmd = new SqlCommand(
+                        "SELECT idtienda, nombre FROM dbo.TIENDAS WHERE ISNULL(activo,1)=1 ORDER BY nombre", cn))
+                    using (var dr = cmd.ExecuteReader())
+                    {
+                        while (dr.Read())
+                        {
+                            ddlTienda.Items.Add(new ListItem(
+                                dr.IsDBNull(1) ? "(sin nombre)" : dr.GetString(1),
+                                dr.GetInt32(0).ToString()));
+                        }
+                    }
 
-                // 3) UNIDADES
-                ddlUnidad.Items.Clear();
-                // — Placeholder principal
-                ddlUnidad.Items.Add(new ListItem("-- Unidad --", ""));
-                // — Opción “Agregar nueva unidad” en segundo lugar
-                ddlUnidad.Items.Add(new ListItem("-- Agregar nueva unidad --", "0"));
+                    // MARCAS
+                    ddlMarca.Items.Clear();
+                    ddlMarca.Items.Add(new ListItem("-- Marca --", ""));
+                    ddlMarca.Items.Add(new ListItem("-- Agregar nueva marca --", "0"));
+                    using (var cmd = new SqlCommand(
+                        "SELECT idmarca, nombre FROM dbo.MARCAS WHERE ISNULL(activo,1)=1 ORDER BY nombre", cn))
+                    using (var dr = cmd.ExecuteReader())
+                    {
+                        while (dr.Read())
+                        {
+                            ddlMarca.Items.Add(new ListItem(
+                                dr.IsDBNull(1) ? "(sin nombre)" : dr.GetString(1),
+                                dr.GetInt32(0).ToString()));
+                        }
+                    }
 
-                // — Carga las unidades existentes —
-                using (var cmd3 = new SqlCommand(
-                    "SELECT idunidaddemedida,nombre FROM dbo.UNIDADDEMEDIDAS WHERE activo=1 ORDER BY nombre", cn))
-                using (var dr3 = cmd3.ExecuteReader())
-                    while (dr3.Read())
-                        ddlUnidad.Items.Add(new ListItem(
-                            dr3["nombre"].ToString(),
-                            dr3["idunidaddemedida"].ToString()));
-
-
-                // 4) MARCAS
-                // — Limpiar y poner placeholder —
-                ddlMarca.Items.Clear();
-                ddlMarca.Items.Add(new ListItem("-- Marca --", ""));
-                // — Insertar “Agregar nueva” como segundo ítem —
-                ddlMarca.Items.Add(new ListItem("-- Agregar nueva marca --", "0"));
-
-                // — Cargar todas las marcas de la BD —
-                using (var cmd4 = new SqlCommand(
-                    "SELECT idmarca,nombre FROM dbo.MARCAS WHERE activo=1 ORDER BY nombre", cn))
-                using (var dr4 = cmd4.ExecuteReader())
-                    while (dr4.Read())
-                        ddlMarca.Items.Add(new ListItem(
-                            dr4["nombre"].ToString(),
-                            dr4["idmarca"].ToString()));
-
-
-
-                // 5) COLORES IMAGEN
-                ddlImgColor.Items.Clear();
-                ddlImgColor.Items.Add(new ListItem("-- Color imagen --", ""));
-                using (var cmd5 = new SqlCommand(
-                    "SELECT idcolor,nombre FROM dbo.COLORES", cn))
-                using (var dr5 = cmd5.ExecuteReader())
-                    while (dr5.Read())
-                        ddlImgColor.Items.Add(new ListItem(
-                            dr5["nombre"].ToString(),
-                            dr5["idcolor"].ToString()));
+                    // COLORES (para imágenes)
+                    ddlImgColor.Items.Clear();
+                    ddlImgColor.Items.Add(new ListItem("-- Color imagen --", ""));
+                    using (var cmd = new SqlCommand(
+                        "SELECT idcolor, nombre FROM dbo.COLORES ORDER BY nombre", cn))
+                    using (var dr = cmd.ExecuteReader())
+                    {
+                        while (dr.Read())
+                        {
+                            ddlImgColor.Items.Add(new ListItem(
+                                dr.IsDBNull(1) ? "(sin nombre)" : dr.GetString(1),
+                                dr.GetInt32(0).ToString()));
+                        }
+                    }
+                }
+            }
+            catch (Exception ex)
+            {
+                // Si algo falla, muéstralo y así sabemos por qué no se llenó.
+                MostrarError("No se pudieron cargar las listas: " + ex.Message);
             }
         }
-
 
         /// <summary>
         /// Carga los públicos desde la tabla PUBLICOS en el dropdown ddlPublico.
@@ -345,54 +341,41 @@ namespace PandaMay.Productos
 
 
         // Recarga SOLO la lista de unidades y deja seleccionada la recién creada
-        private void RecargarUnidadesSeleccionando(int idNew)
-        {
-            // 1) Limpiar y placeholder + nueva
-            ddlUnidad.Items.Clear();
-            ddlUnidad.Items.Add(new ListItem("-- Unidad --", ""));
-            ddlUnidad.Items.Add(new ListItem("-- Agregar nueva unidad --", "0"));
 
-            // 2) Abrir conexión y cargar unidades
-            using (var cn = new SqlConnection(_connString))
-            {
-                cn.Open();
-                using (var cmd = new SqlCommand(
-                    "SELECT idunidaddemedida,nombre FROM dbo.UNIDADDEMEDIDAS WHERE activo=1 ORDER BY nombre", cn))
-                using (var dr = cmd.ExecuteReader())
-                    while (dr.Read())
-                        ddlUnidad.Items.Add(new ListItem(
-                            dr["nombre"].ToString(),
-                            dr["idunidaddemedida"].ToString()));
-            }
-
-            // 3) Seleccionar la recién creada
-            ddlUnidad.SelectedValue = idNew.ToString();
-        }
-
-
+        // Recarga SOLO la lista de marcas y deja seleccionada la recién creada
         // Recarga SOLO la lista de marcas y deja seleccionada la recién creada
         private void RecargarMarcasSeleccionando(int idNew)
         {
-            // 1) Limpiar y placeholder + nueva
-            ddlMarca.Items.Clear();
-            ddlMarca.Items.Add(new ListItem("-- Marca --", ""));
-            ddlMarca.Items.Add(new ListItem("-- Agregar nueva marca --", "0"));
-
-            // 2) Abrir conexión para recarga
-            using (var cn = new SqlConnection(_connString))
+            try
             {
-                cn.Open();
-                using (var cmd = new SqlCommand(
-                    "SELECT idmarca,nombre FROM dbo.MARCAS WHERE activo=1 ORDER BY nombre", cn))
-                using (var dr = cmd.ExecuteReader())
-                    while (dr.Read())
-                        ddlMarca.Items.Add(new ListItem(
-                            dr["nombre"].ToString(),
-                            dr["idmarca"].ToString()));
-            }
+                ddlMarca.Items.Clear();
+                ddlMarca.Items.Add(new ListItem("-- Marca --", ""));
+                ddlMarca.Items.Add(new ListItem("-- Agregar nueva marca --", "0"));
 
-            // 3) Seleccionar la marca recién agregada
-            ddlMarca.SelectedValue = idNew.ToString();
+                using (var cn = new SqlConnection(_connString))
+                {
+                    cn.Open();
+                    using (var cmd = new SqlCommand(
+                        "SELECT idmarca, nombre FROM dbo.MARCAS WHERE ISNULL(activo,1)=1 ORDER BY nombre", cn))
+                    using (var dr = cmd.ExecuteReader())
+                    {
+                        while (dr.Read())
+                        {
+                            ddlMarca.Items.Add(new ListItem(
+                                dr.IsDBNull(1) ? "(sin nombre)" : dr.GetString(1),
+                                dr.GetInt32(0).ToString()));
+                        }
+                    }
+                }
+
+                // Seleccionar la nueva marca al final
+                var item = ddlMarca.Items.FindByValue(idNew.ToString());
+                if (item != null) ddlMarca.SelectedValue = idNew.ToString();
+            }
+            catch (Exception ex)
+            {
+                MostrarError("No se pudo recargar la lista de marcas: " + ex.Message);
+            }
         }
 
 
@@ -641,17 +624,22 @@ VALUES
 
         private void RegistrarOpcionesMedidas()
         {
-            // --- Medidas ---
+            // --- Medidas (mostrar medidaeu; si viene null, caer a tipomedida) ---
             var sbMedidas = new StringBuilder();
             using (var cn = new SqlConnection(_connString))
-            using (var cmd = new SqlCommand(
-                "SELECT idmedida, tipomedida FROM dbo.MEDIDAS WHERE activo = 1 ORDER BY tipomedida", cn))
+            using (var cmd = new SqlCommand(@"
+        SELECT idmedida,
+               COALESCE(medidaeu, tipomedida) AS nombre
+        FROM dbo.MEDIDAS
+        WHERE ISNULL(activo,1)=1
+        ORDER BY nombre;", cn))
             {
                 cn.Open();
                 using (var dr = cmd.ExecuteReader())
                     while (dr.Read())
                         sbMedidas.AppendFormat("<option value=\"{0}\">{1}</option>",
-                            dr.GetInt32(0), dr.GetString(1));
+                            dr.GetInt32(0),
+                            dr.IsDBNull(1) ? "(sin nombre)" : dr.GetString(1));
             }
 
             // --- Proveedores (para el combo en precios de compra) ---
@@ -671,46 +659,14 @@ VALUES
                             dr.GetInt32(0), dr.GetString(1));
             }
 
-            // --- Inyecta AMBAS variables JS ---
+            // Inyecta ambas variables JS
             var script = $@"
 <script type=""text/javascript"">
-  var medidasOptions = `{sbMedidas}`;
+  var medidasOptions = `{sbMedidas}`;   // las opciones de MEDIDAS (sin la opción 'new')
   var supplierOptions = `{sbProv}`;
 </script>";
             ClientScript.RegisterClientScriptBlock(this.GetType(), "medidasYProveedores", script, false);
         }
-
-        protected void ddlUnidad_SelectedIndexChanged(object s, EventArgs e)
-        {
-            pnlAddUnidad.Visible = ddlUnidad.SelectedValue == "0";
-        }
-
-        protected void btnGuardarUnidad_Click(object s, EventArgs e)
-        {
-            var nueva = txtNewUnidad.Text.Trim();
-            if (string.IsNullOrEmpty(nueva)) return;
-
-            int idNew;
-            using (var cn = new SqlConnection(_connString))
-            using (var cmd = new SqlCommand(@"
-        INSERT INTO dbo.UNIDADDEMEDIDAS(nombre,activo)
-        OUTPUT INSERTED.idunidaddemedida
-        VALUES(@n,1);", cn))
-            {
-                cmd.Parameters.AddWithValue("@n", nueva);
-                cn.Open();
-                idNew = (int)cmd.ExecuteScalar();
-            }
-
-            // Recargar listas y seleccionar la nueva
-            RecargarUnidadesSeleccionando(idNew);
-
-
-            // Ocultar panel y limpiar textbox
-            pnlAddUnidad.Visible = false;
-            txtNewUnidad.Text = "";
-        }
-
 
         protected void ddlMarca_SelectedIndexChanged(object s, EventArgs e)
         {
@@ -747,11 +703,12 @@ VALUES
             if (!Page.IsValid) return;
             lblError.Visible = false;
 
-            // —– Validaciones previas —–
-            if (!int.TryParse(ddlUnidad.SelectedValue, out var unidad) || unidad == 0)
-            { MostrarError("Seleccione o cree una unidad válida."); return; }
-            if (!int.TryParse(ddlMarca.SelectedValue, out var marca) || marca == 0)
-            { MostrarError("Seleccione o cree una marca válida."); return; }
+            // Marca opcional -> NULL si no se elige
+            int? idMarca = null;
+            if (int.TryParse(ddlMarca.SelectedValue, out var marcaTmp) && marcaTmp > 0)
+                idMarca = marcaTmp;
+
+            // Requeridos
             if (!int.TryParse(ddlTienda.SelectedValue, out var tienda) || tienda == 0)
             { MostrarError("Seleccione tienda."); return; }
             if (!int.TryParse(ddlSubcategoria.SelectedValue, out var sc) || sc == 0)
@@ -759,7 +716,7 @@ VALUES
             if (!int.TryParse(ddlPublico.SelectedValue, out var idPublico) || idPublico == 0)
             { MostrarError("Seleccione un tipo de público válido."); return; }
 
-            // —– Lectura de campos —–
+            // Campos
             var nombre = txtNombre.Text.Trim();
             var referencia = txtReferencia.Text.Trim();
             var cb = long.TryParse(txtCodigoBarras.Text.Trim(), out var tmpCb) ? tmpCb : 0L;
@@ -767,33 +724,41 @@ VALUES
             var tipoProd = txtTipo.Text.Trim();
             var descuento = float.TryParse(txtDescuento.Text.Trim(), out var tmpD) ? tmpD : 0f;
 
-            // —– Tarifas —–
+            // Precios de venta
             var tarifas = Request.Form.GetValues("tarifa") ?? Array.Empty<string>();
             var precioVal = Request.Form.GetValues("precioVal") ?? Array.Empty<string>();
+            var cantMinVal = Request.Form.GetValues("cantMin") ?? Array.Empty<string>();
 
-            // —– Existencias (Medida + Cantidad) —–
-            var medidas = Request.Form.GetValues("histMedida") ?? Array.Empty<string>();
-            var cantidades = Request.Form.GetValues("histCantidad") ?? Array.Empty<string>();
+            // ===== EXISTENCIAS (lectura de campos del form) =====
+            var medidas = Request.Form.GetValues("histMedida") ?? new string[0];
+            var cantidades = Request.Form.GetValues("histCantidad") ?? new string[0];
+
+            // Campos cuando el usuario elige “+ Nueva medida…”
+            var medidaEUs = Request.Form.GetValues("histMedidaEu") ?? new string[0];
+            var anchos = Request.Form.GetValues("histAncho") ?? new string[0];
+            var largos = Request.Form.GetValues("histLargo") ?? new string[0];
+            var altos = Request.Form.GetValues("histAlto") ?? new string[0];
+            var profundidades = Request.Form.GetValues("histProfundidad") ?? new string[0];
+            var circunferencias = Request.Form.GetValues("histCircunferencia") ?? new string[0];
+
+            // Nº de filas a procesar (al menos Medida + Cantidad)
             int filas = Math.Min(medidas.Length, cantidades.Length);
 
-            // —– Precios de Compra —–
+
+            // Precios de compra
             var compProvs = Request.Form.GetValues("compProveedor") ?? Array.Empty<string>();
             var compPrecios = Request.Form.GetValues("compPrecio") ?? Array.Empty<string>();
             var compFechas = Request.Form.GetValues("compFecha") ?? Array.Empty<string>();
             int compCount = new[] { compProvs.Length, compPrecios.Length, compFechas.Length }.Min();
 
-            // —– Imagen —–
-            byte[] imgBytes = null;
-            if (fuImagen.HasFile)
+            // **** Imágenes múltiples (opcional) ****
+            var archivos = new List<System.Web.HttpPostedFile>();
+            if (fuImagenes.HasFiles)
             {
-                using (var ms = new MemoryStream())
-                {
-                    fuImagen.PostedFile.InputStream.CopyTo(ms);
-                    imgBytes = ms.ToArray();
-                }
+                foreach (System.Web.HttpPostedFile f in fuImagenes.PostedFiles)
+                    if (f != null && f.ContentLength > 0) archivos.Add(f);
             }
 
-            // —– Transacción única —–
             using (var cn = new SqlConnection(_connString))
             {
                 cn.Open();
@@ -801,72 +766,131 @@ VALUES
                 {
                     try
                     {
-                        // 1) PRODUCTOS → newId
-                        int newId;
+                        // 1) PRODUCTO
+                        int idProducto;
                         using (var cmd = new SqlCommand(@"
 INSERT INTO dbo.PRODUCTOS
-  (idsubcategoria, idunidaddemedida, nombre,
-   referencia, codigodebarras, activo, tipodeproducto, descuento)
+    (idsubcategoria, nombre, referencia, codigodebarras, activo, tipodeproducto, descuento, fecha)
 OUTPUT INSERTED.idproducto
 VALUES
-  (@sub, @uni, @nom, @ref, @cb, @act, @tip, @des);", cn, tx))
+    (@sub, @nom, @ref, @cb, @act, @tip, @des, GETDATE());", cn, tx))
                         {
-                            cmd.Parameters.AddWithValue("@sub", sc > 0 ? (object)sc : DBNull.Value);
-                            cmd.Parameters.AddWithValue("@uni", unidad);
+                            cmd.Parameters.AddWithValue("@sub", sc);
                             cmd.Parameters.AddWithValue("@nom", nombre);
-                            cmd.Parameters.AddWithValue("@ref", referencia);
+                            cmd.Parameters.AddWithValue("@ref", string.IsNullOrWhiteSpace(referencia) ? (object)DBNull.Value : referencia);
                             cmd.Parameters.AddWithValue("@cb", cb);
                             cmd.Parameters.AddWithValue("@act", activo);
-                            cmd.Parameters.AddWithValue("@tip", tipoProd);
+                            cmd.Parameters.AddWithValue("@tip", string.IsNullOrWhiteSpace(tipoProd) ? (object)DBNull.Value : tipoProd);
                             cmd.Parameters.AddWithValue("@des", descuento);
-                            newId = (int)cmd.ExecuteScalar();
+                            idProducto = (int)cmd.ExecuteScalar();
                         }
 
-                        // 2) EXISTENCIAS (por cada Medida+Cantidad)
+                        // 2) EXISTENCIAS (una por medida/cantidad). Marca puede ir NULL.
                         var existenciasIds = new List<int>();
+
+                        // Helpers locales (compatibles con C# 7.3)
+                        decimal? TryDecLocal(string[] arr, int idx)
+                        {
+                            if (arr == null || idx >= arr.Length) return null;
+
+                            var strVal = (arr[idx] ?? "").Trim();   // <— antes se llamaba "s"
+                            if (strVal == "") return null;
+
+                            decimal d;
+                            return decimal.TryParse(strVal, out d) ? (decimal?)d : null;
+                        }
+
+                        Action<SqlCommand, string, decimal?> AddDecParamLocal = (cmd, name, val) =>
+                        {
+                            var p = cmd.Parameters.Add(name, SqlDbType.Decimal);
+                            p.Precision = 18; p.Scale = 2; p.Value = (object)val ?? DBNull.Value;
+                        };
+
+
                         for (int i = 0; i < filas; i++)
                         {
-                            if (!int.TryParse(medidas[i], out var idMedida) || idMedida <= 0) continue;
+                            // cantidad obligatoria (>0)
                             if (!int.TryParse(cantidades[i], out var cant) || cant <= 0) continue;
 
-                            int idExist;
+                            // Determinar idMedida
+                            int idMedida = 0;
+                            var medRaw = (i < medidas.Length ? (medidas[i] ?? "").Trim() : "");
+
+                            if (string.Equals(medRaw, "new", StringComparison.OrdinalIgnoreCase))
+                            {
+                                // Crear una nueva medida con datos opcionales (se guardan en NULL si no se llenan)
+                                string medEU = (i < medidaEUs.Length ? medidaEUs[i]?.Trim() : null);
+                                decimal? ancho = TryDecLocal(anchos, i);
+                                decimal? largo = TryDecLocal(largos, i);
+                                decimal? alto = TryDecLocal(altos, i);
+                                decimal? profundidad = TryDecLocal(profundidades, i);
+                                decimal? circunf = TryDecLocal(circunferencias, i);
+
+                                using (var cmdM = new SqlCommand(@"
+INSERT INTO dbo.MEDIDAS
+    (medidaeu, tipomedida, ancho, largo, alto, profundidad, circunferencia, descripcion, activo)
+OUTPUT INSERTED.idmedida
+VALUES
+    (@meu, NULL, @an, @la, @al, @pr, @ci, NULL, 1);", cn, tx))
+                                {
+                                    cmdM.Parameters.AddWithValue("@meu", string.IsNullOrWhiteSpace(medEU) ? (object)DBNull.Value : medEU);
+                                    AddDecParamLocal(cmdM, "@an", ancho);
+                                    AddDecParamLocal(cmdM, "@la", largo);
+                                    AddDecParamLocal(cmdM, "@al", alto);
+                                    AddDecParamLocal(cmdM, "@pr", profundidad);
+                                    AddDecParamLocal(cmdM, "@ci", circunf);
+
+                                    idMedida = (int)cmdM.ExecuteScalar();
+                                }
+                            }
+                            else
+                            {
+                                // Usar una medida existente seleccionada en el combo
+                                if (!int.TryParse(medRaw, out idMedida) || idMedida <= 0) continue;
+                            }
+
+                            // Insertar la existencia con esa medida
                             using (var cmdE = new SqlCommand(@"
 INSERT INTO dbo.EXISTENCIAS
-  (idtienda, idproducto, idimagen, idmedida, idmarca, cantidad, fechaingreso)
+    (idtienda, idproducto, idimagen, idmedida, idmarca, cantidad, fechaingreso, activo)
 OUTPUT INSERTED.idexistencia
-VALUES (@tid, @pid, NULL, @med, @mar, @can, GETDATE());", cn, tx))
+VALUES
+    (@tid, @pid, NULL, @med, @mar, @can, GETDATE(), 1);", cn, tx))
                             {
                                 cmdE.Parameters.AddWithValue("@tid", tienda);
-                                cmdE.Parameters.AddWithValue("@pid", newId);
+                                cmdE.Parameters.AddWithValue("@pid", idProducto);
                                 cmdE.Parameters.AddWithValue("@med", idMedida);
-                                cmdE.Parameters.AddWithValue("@mar", marca);
+                                cmdE.Parameters.AddWithValue("@mar", (object)idMarca ?? DBNull.Value);
                                 cmdE.Parameters.AddWithValue("@can", cant);
-                                idExist = (int)cmdE.ExecuteScalar();
-                            }
-                            existenciasIds.Add(idExist);
 
-                            // 2.1) Enlazar PÚBLICO a cada existencia (si aplica el modelo)
-                            using (var cmdEP = new SqlCommand(@"
+                                var idExist = (int)cmdE.ExecuteScalar();
+                                existenciasIds.Add(idExist);
+
+                                // Público asociado
+                                using (var cmdEP = new SqlCommand(@"
 INSERT INTO dbo.EXISTENCIASPUBLICOS (idexistencia, idpublico, activo)
 VALUES (@eid, @pid, 1);", cn, tx))
-                            {
-                                cmdEP.Parameters.AddWithValue("@eid", idExist);
-                                cmdEP.Parameters.AddWithValue("@pid", idPublico);
-                                cmdEP.ExecuteNonQuery();
+                                {
+                                    cmdEP.Parameters.AddWithValue("@eid", idExist);
+                                    cmdEP.Parameters.AddWithValue("@pid", idPublico);
+                                    cmdEP.ExecuteNonQuery();
+                                }
                             }
                         }
 
                         if (existenciasIds.Count == 0)
                             throw new Exception("Debe registrar al menos una existencia (medida y cantidad).");
 
-                        // 3) PRECIOS DE VENTA (sobre la primera existencia)
+                        // Elegimos una existencia "principal" para precios e imágenes
                         int existenciaPrincipal = existenciasIds[0];
-                        const string sqlPrecios = @"
+
+
+                        // 3) PRECIOS DE VENTA (con cantidad mínima)
+                        using (var cmdPrecio = new SqlCommand(@"
 INSERT INTO dbo.PRECIOS
-  (idexistencia, idnombreprecio, precio, activo, fecha)
+    (idexistencia, idnombreprecio, precio, cantidad, activo, fecha)
 VALUES
-  (@idexistencia, @idnombreprecio, @precio, 1, GETDATE());";
-                        using (var cmdPrecio = new SqlCommand(sqlPrecios, cn, tx))
+    (@idexistencia, @idnombreprecio, @precio, @cantidad, 1, GETDATE());", cn, tx))
                         {
                             for (int i = 0; i < tarifas.Length; i++)
                             {
@@ -874,75 +898,92 @@ VALUES
                                 if (i >= precioVal.Length) continue;
                                 if (!decimal.TryParse(precioVal[i], out var p)) continue;
 
+                                int cantMin = 0;
+                                if (i < cantMinVal.Length) int.TryParse(cantMinVal[i], out cantMin);
+
                                 cmdPrecio.Parameters.Clear();
                                 cmdPrecio.Parameters.AddWithValue("@idexistencia", existenciaPrincipal);
                                 cmdPrecio.Parameters.AddWithValue("@idnombreprecio", idNomPre);
-                                cmdPrecio.Parameters.AddWithValue("@precio", p);
+                                var pParam = cmdPrecio.Parameters.Add("@precio", SqlDbType.Decimal);
+                                pParam.Precision = 18; pParam.Scale = 2; pParam.Value = p;
+                                cmdPrecio.Parameters.Add("@cantidad", SqlDbType.Int).Value =
+                                    cantMin > 0 ? (object)cantMin : DBNull.Value;
                                 cmdPrecio.ExecuteNonQuery();
                             }
                         }
 
-                        // 4) IMAGEN (guarda y vincula a la última existencia)
-                        if (imgBytes != null && imgBytes.Length > 0 && existenciasIds.Count > 0)
+                        // 4) IMÁGENES MÚLTIPLES -> IMAGENES + EXISTENCIASIMAGENES
+                        if (archivos.Count > 0)
                         {
-                            int newImageId;
-                            using (var cmdImg = new SqlCommand(@"
-INSERT INTO dbo.IMAGENES
-  (idcolor, foto, descripcion, activo, fecha)
-VALUES
-  (@col, @bin, @desc, 1, GETDATE());
-SELECT CAST(SCOPE_IDENTITY() AS INT);", cn, tx))
+                            // Color opcional (NULL si no se elige)
+                            int idColorSel = 0;
+                            int.TryParse(ddlImgColor.SelectedValue, out idColorSel);
+                            string descComun = string.IsNullOrWhiteSpace(txtImgDesc.Text)
+                                ? null
+                                : txtImgDesc.Text.Trim();
+
+                            foreach (var file in archivos)
                             {
-                                var col = int.TryParse(ddlImgColor.SelectedValue, out var tmpC) ? tmpC : 0;
-                                cmdImg.Parameters.AddWithValue("@col", col > 0 ? (object)col : DBNull.Value);
-                                cmdImg.Parameters.Add("@bin", SqlDbType.VarBinary, imgBytes.Length).Value = imgBytes;
-                                cmdImg.Parameters.AddWithValue("@desc",
-                                    string.IsNullOrWhiteSpace(txtImgDesc.Text) ? (object)DBNull.Value : txtImgDesc.Text.Trim());
-                                newImageId = (int)cmdImg.ExecuteScalar();
-                            }
-                            using (var cmdUpd = new SqlCommand(@"
-UPDATE dbo.EXISTENCIAS
-   SET idimagen = @img
- WHERE idexistencia = @eid;", cn, tx))
-                            {
-                                cmdUpd.Parameters.AddWithValue("@img", newImageId);
-                                cmdUpd.Parameters.AddWithValue("@eid", existenciasIds.Last());
-                                cmdUpd.ExecuteNonQuery();
+                                byte[] bytes;
+                                using (var ms = new MemoryStream())
+                                {
+                                    file.InputStream.CopyTo(ms);
+                                    bytes = ms.ToArray();
+                                }
+
+                                int idImagen;
+                                using (var cmdImg = new SqlCommand(@"
+INSERT INTO dbo.IMAGENES (idcolor, foto, descripcion, activo, fecha)
+OUTPUT INSERTED.idimagen
+VALUES (@col, @bin, @desc, 1, GETDATE());", cn, tx))
+                                {
+                                    cmdImg.Parameters.AddWithValue("@col", idColorSel > 0 ? (object)idColorSel : DBNull.Value);
+                                    cmdImg.Parameters.Add("@bin", SqlDbType.VarBinary, bytes.Length).Value = bytes;
+                                    // Si no hay descripción global, guardamos el nombre del archivo
+                                    var desc = (object)(descComun ?? System.IO.Path.GetFileName(file.FileName)) ?? DBNull.Value;
+                                    cmdImg.Parameters.AddWithValue("@desc", desc);
+                                    idImagen = (int)cmdImg.ExecuteScalar();
+                                }
+
+                                // Relación muchos-a-muchos con la existencia
+                                using (var cmdRel = new SqlCommand(@"
+INSERT INTO dbo.EXISTENCIASIMAGENES (idexistencia, idimagen, activo)
+VALUES (@eid, @iid, 1);", cn, tx))
+                                {
+                                    cmdRel.Parameters.AddWithValue("@eid", existenciaPrincipal);
+                                    cmdRel.Parameters.AddWithValue("@iid", idImagen);
+                                    cmdRel.ExecuteNonQuery();
+                                }
                             }
                         }
 
-                        // 5) PRECIOS DE COMPRA (tabla real: dbo.PRECIOSCOMPRAS, usa idexistencia)
-                        const string sqlCompra = @"
-INSERT INTO dbo.PRECIOSCOMPRAS
-  (idexistencia, descripcion, precio, fecha)
-VALUES
-  (@eid, @desc, @precio, @fecha);";
-                        using (var cmdCompra = new SqlCommand(sqlCompra, cn, tx))
+                        // 5) PRECIOS DE COMPRA
+                        using (var cmdCompra = new SqlCommand(@"
+INSERT INTO dbo.PRECIOSCOMPRAS (idexistencia, descripcion, precio, activo, fecha)
+VALUES (@eid, @desc, @precio, 1, @fecha);", cn, tx))
                         {
                             for (int i = 0; i < compCount; i++)
                             {
                                 if (!decimal.TryParse(compPrecios[i], out var precioCompra)) continue;
-
                                 DateTime fechaCompra;
                                 if (!DateTime.TryParse(compFechas[i], out fechaCompra))
                                     fechaCompra = DateTime.Today;
 
-                                // Como tu tabla no tiene idproveedor, lo dejamos (opcional) en descripción
                                 var provRaw = (compProvs[i] ?? "").Trim();
                                 string descProv = (!string.IsNullOrEmpty(provRaw) && provRaw != "new")
-                                                  ? "ProveedorId:" + provRaw
-                                                  : null;
+                                    ? "ProveedorId:" + provRaw
+                                    : null;
 
                                 cmdCompra.Parameters.Clear();
                                 cmdCompra.Parameters.AddWithValue("@eid", existenciaPrincipal);
                                 cmdCompra.Parameters.AddWithValue("@desc", (object)descProv ?? DBNull.Value);
-                                cmdCompra.Parameters.AddWithValue("@precio", precioCompra);
+                                var pc = cmdCompra.Parameters.Add("@precio", SqlDbType.Decimal);
+                                pc.Precision = 18; pc.Scale = 2; pc.Value = precioCompra;
                                 cmdCompra.Parameters.AddWithValue("@fecha", fechaCompra);
                                 cmdCompra.ExecuteNonQuery();
                             }
                         }
 
-                        // Commit y salir
                         tx.Commit();
                         Response.Redirect("Productos.aspx");
                     }
@@ -954,7 +995,6 @@ VALUES
                 }
             }
         }
-
 
 
         private void MostrarError(string msg)
@@ -1028,6 +1068,65 @@ VALUES (@u);", cn, tx))
 
             return new { id = idProveedor, nombre = nombre.Trim() };
         }
+
+        [WebMethod]
+        [ScriptMethod(ResponseFormat = ResponseFormat.Json)]
+        public static object AddMedida(
+    string medidaeu,
+    string ancho,
+    string largo,
+    string alto,
+    string profundidad,
+    string circunferencia)
+        {
+            var conn = ConfigurationManager.ConnectionStrings["ConnectionString4"].ConnectionString;
+
+            decimal? dAncho = TryDec(ancho);
+            decimal? dLargo = TryDec(largo);
+            decimal? dAlto = TryDec(alto);
+            decimal? dProf = TryDec(profundidad);
+            decimal? dCirc = TryDec(circunferencia);
+
+            int idMedida;
+            using (var cn = new SqlConnection(conn))
+            using (var cmd = new SqlCommand(@"
+INSERT INTO dbo.MEDIDAS
+  (medidaeu, tipomedida, ancho, largo, alto, profundidad, circunferencia, activo)
+OUTPUT INSERTED.idmedida
+VALUES
+  (@meu, NULL, @ancho, @largo, @alto, @prof, @circ, 1);", cn))
+            {
+                cmd.Parameters.AddWithValue("@meu",
+                    string.IsNullOrWhiteSpace(medidaeu) ? (object)DBNull.Value : medidaeu.Trim());
+
+                AddDecParam(cmd, "@ancho", dAncho);
+                AddDecParam(cmd, "@largo", dLargo);
+                AddDecParam(cmd, "@alto", dAlto);
+                AddDecParam(cmd, "@prof", dProf);
+                AddDecParam(cmd, "@circ", dCirc);
+
+                cn.Open();
+                idMedida = (int)cmd.ExecuteScalar();
+            }
+
+            var nombreMostrar = string.IsNullOrWhiteSpace(medidaeu) ? "(sin nombre)" : medidaeu.Trim();
+            return new { id = idMedida, nombre = nombreMostrar };
+        }
+
+        // helpers
+        private static decimal? TryDec(string s)
+        {
+            if (decimal.TryParse((s ?? "").Trim(), out var d)) return d;
+            return null;
+        }
+        private static void AddDecParam(SqlCommand cmd, string name, decimal? value)
+        {
+            var p = cmd.Parameters.Add(name, SqlDbType.Decimal);
+            p.Precision = 18;
+            p.Scale = 2;
+            p.Value = value.HasValue ? (object)value.Value : DBNull.Value;
+        }
+
 
 
         // Guarda la nueva tarifa y recarga la página
